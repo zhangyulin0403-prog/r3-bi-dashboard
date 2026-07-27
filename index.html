@@ -14964,7 +14964,7 @@ function fmt(n,d=1){if(n==null||isNaN(n))return'-';return Number(n).toFixed(d)}
 function fmtInt(n){if(n==null||isNaN(n))return'-';return Math.round(n).toLocaleString()}
 function fmtPct(n){if(n==null||isNaN(n))return'-';return(n*100).toFixed(1)+'%'}
 function cmpVal(base,val){if(base==null||val==null)return null;return val-base}
-function cmpCell(base,val,inv){const d=cmpVal(base,val);if(d==null)return'<span class="missing">-</span>';const abs=Math.abs(d)*100;const cls=(inv?(d>0):(d<0))?'cmp-down':'cmp-up';const sign=d>0?'+':'';return`<span class="${cls} num">${sign}${abs.toFixed(1)}pp</span>`}
+function cmpCell(base,val,inv){const d=cmpVal(base,val);if(d==null)return'<span class="missing">-</span>';const abs=Math.abs(d)*100;const cls=(inv?(d>0):(d<0))?'cmp-down':'cmp-up';const sign=d>0?'+':'';return`<span class="${cls} num">${sign}${abs.toFixed(2)}%</span>`}
 function wavg(vals,weights){let sw=0,sv=0;vals.forEach((v,i)=>{if(v!=null&&!isNaN(v)&&weights[i]>0){sw+=weights[i];sv+=v*weights[i]}});return sw>0?sv/sw:null}
 function avg(vals){const v=vals.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
 function sum(vals){return vals.reduce((a,b)=>a+(b||0),0)}
@@ -15033,13 +15033,18 @@ function buildFilterBar(){
     if(currentValid.length!==2||!availVersions.slice(0,2).every(v=>currentValid.includes(v))){
       S.versions=availVersions.slice(0,2);
     }
+  }else if(S.mode==='compare'){
+    // Multi-project mode: default select all available versions
+    if(S.versions.length!==availVersions.length||!availVersions.every(v=>S.versions.includes(v))){
+      S.versions=[...availVersions];
+    }
   }
-  buildMS('ms-countries','countries',top10Countries.length>0?top10Countries:COUNTRIES);
+  buildMS('ms-countries','countries',COUNTRIES);
   buildMS('ms-dates','dates',DATES);
   buildMS('ms-versions','versions',availVersions.length>0?availVersions:VERSIONS);
   buildMS('ms-dim','dim',['首日访问日期','平均值'],{defaults:['平均值']});
   bar.querySelectorAll('.mode-switch button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;if(S.mode==='single'&&S.projects.length>1){S.projects=[S.projects[0]]}renderAll()});
-  document.getElementById('btnCancelAll').onclick=()=>{S.projects=[...PROJECTS];S.mode='compare';const pd=commonData;const ct={};pd.forEach(r=>{ct[r.country]=(ct[r.country]||0)+r.newUsers});S.countries=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,10).map(e=>e[0]);S.dates=[...DATES];S.versions=[...new Set(pd.map(r=>r.version))].sort().reverse().slice(0,2);S.dim=['平均值'];renderAll()};
+  document.getElementById('btnCancelAll').onclick=()=>{S.projects=[...PROJECTS];S.mode='compare';S.countries=[...COUNTRIES];S.dates=[...DATES];S.versions=[...new Set(commonData.map(r=>r.version))].sort().reverse();S.dim=['平均值'];renderAll()};
 }
 function buildMS(id,key,opts,extra){
   const defaults=extra?.defaults||opts;
@@ -15116,9 +15121,10 @@ function buildCmpTable(title,metrics,groups,keys,compareKey){
         if(fv!=null&&cv!=null){
           if(m.isNum){
             const diff=cv-fv;
+            const absPct=fv?Math.abs(diff/fv)*100:0;
             const cls=diff>=0?'cmp-up':'cmp-down';
             const sign=diff>0?'+':'';
-            h+=`<td class="num ${cls}">${sign}${fmtInt(diff)}</td>`;
+            h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
           }else{
             // Unified percentage format for comparison values
             const diff=cv-fv;
@@ -15126,7 +15132,7 @@ function buildCmpTable(title,metrics,groups,keys,compareKey){
             const isBad=m.lower?diff>0:diff<0;
             const cls=isBad?'cmp-down':'cmp-up';
             const sign=diff>0?'+':'';
-            h+=`<td class="num ${cls}">${sign}${absPct.toFixed(1)}%</td>`;
+            h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
           }
         }else{h+='<td><span class="missing">-</span></td>'}
       }
@@ -15167,7 +15173,7 @@ function buildPVUVNewUsersRow(keys,groups,pvuv){
   keys.forEach((k,i)=>{
     const nu=sum(groups[k].rows.map(r=>r.newUsers));
     h+=`<td class="num" colspan="${colCount}">${fmtInt(nu)}</td>`;
-    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${fmtInt(d)}</td>`}
+    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;const absPct=fnu?Math.abs(d/fnu)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
   });
   h+='</tr>';
   return h;
@@ -15179,18 +15185,18 @@ function buildPVUVCompareCell(pv,uv,fpv,fuv,pvuv){
   let h='';
   if(pvuv.includes('pv')){
     if(fpv!=null&&pv!=null){
-      const d=pv-fpv;const absPct=Math.abs(d)*100;
+      const d=pv-fpv;const absPct=fpv?Math.abs(d/fpv)*100:0;
       const cls=d>=0?'cmp-up':'cmp-down';
       const sign=d>0?'+':'';
-      h+=`<td class="num ${cls}">${sign}${absPct.toFixed(1)}%</td>`;
+      h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
     }else{h+=`<td><span class="missing">-</span></td>`}
   }
   if(pvuv.includes('uv')){
     if(fuv!=null&&uv!=null){
-      const d=uv-fuv;const absPct=Math.abs(d)*100;
+      const d=uv-fuv;const absPct=fuv?Math.abs(d/fuv)*100:0;
       const cls=d>=0?'cmp-up':'cmp-down';
       const sign=d>0?'+':'';
-      h+=`<td class="num ${cls}">${sign}${absPct.toFixed(1)}%</td>`;
+      h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
     }else{h+=`<td><span class="missing">-</span></td>`}
   }
   return h;
@@ -15599,12 +15605,162 @@ function renderTab1(){
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));p.classList.add('active');
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
   let html='<div class="section-title">M1: 筛选条件</div><div class="local-filter"><span style="color:var(--muted)">使用全局筛选条件,分析各国家买量分布</span></div>';
+  html+=buildCountrySummary(sel);
   html+='<div class="section-title">M2: TOP 10 买量国家结构</div>';
   html+=S.mode==='single'?buildCountryTable_Single(sel):buildCountryTable_Multi(sel);
   html+='<div class="section-title">M3: 买量国家趋势变化</div>';
   html+=buildCountryTrendCharts(sel);
   p.innerHTML=html;
   setTimeout(initCountryCharts,100);
+}
+function buildCountrySummary(sel){
+  const fData=filterCommon(sel());
+  const totalUsers=sum(fData.map(r=>r.newUsers));
+  if(totalUsers===0){return'<div class="summary-box"><ul><li>当前筛选条件下暂无买量数据,请调整筛选条件后重试。</li></ul></div>'}
+  const dates=[...new Set(fData.map(r=>r.date))].sort();
+  let h='<div class="summary-box"><ul>';
+
+  if(S.mode==='single'){
+    // ===== 单项目多版本深度对比分析 =====
+    const proj=S.projects[0];
+    const vers=[...S.versions].sort();
+    // Per-version country aggregation
+    const versionData={};
+    vers.forEach(v=>{
+      const vd=fData.filter(r=>r.version===v);
+      const total=sum(vd.map(r=>r.newUsers));
+      const cAgg={};vd.forEach(r=>{cAgg[r.country]=(cAgg[r.country]||0)+r.newUsers});
+      const cSorted=Object.entries(cAgg).sort((a,b)=>b[1]-a[1]);
+      versionData[v]={total,countries:cSorted,top1:cSorted[0],top3:cSorted.slice(0,3)};
+    });
+
+    // Version comparison
+    if(vers.length>=2){
+      const first=versionData[vers[0]];
+      const last=versionData[vers[vers.length-1]];
+      const growth=first.total>0?((last.total-first.total)/first.total*100):0;
+      const firstTop1Pct=first.top1?(first.top1[1]/first.total*100):0;
+      const lastTop1Pct=last.top1?(last.top1[1]/last.total*100):0;
+      const concentrationShift=lastTop1Pct-firstTop1Pct;
+
+      h+=`<li><strong>版本迭代趋势:</strong> ${proj} 从 ${vers[0]} 到 ${vers[vers.length-1]},买量规模${growth>=0?`增长 <strong class="num cmp-up">${growth.toFixed(2)}%</strong>`:`下降 <strong class="num cmp-down">${Math.abs(growth).toFixed(2)}%</strong>`}(${fmtInt(first.total)} → ${fmtInt(last.total)} 人),${growth>=0?'整体买量投入呈扩张态势':'需关注买量缩减原因'}。</li>`;
+
+      // Market concentration shift
+      if(first.top1&&last.top1){
+        h+=`<li><strong>核心市场迁移:</strong> ${vers[0]} 的第一大市场为 <strong>${first.top1[0]}</strong>(占比 ${firstTop1Pct.toFixed(2)}%),${vers[vers.length-1]} 变为 <strong>${last.top1[0]}</strong>(占比 ${lastTop1Pct.toFixed(2)}%),`;
+        if(first.top1[0]===last.top1[0]){
+          h+=`核心市场保持稳定,`;
+          if(concentrationShift>5)h+=`但集中度进一步提升(+${concentrationShift.toFixed(2)}%),买量向单一市场倾斜加剧,存在过度依赖风险。`;
+          else if(concentrationShift<-5)h+=`集中度下降(${concentrationShift.toFixed(2)}%),买量开始向多市场分散,有利于降低单一市场风险。`;
+          else h+=`集中度变化不大,市场结构相对稳定。`;
+        }else{
+          h+=`核心市场发生切换,买量重心从 ${first.top1[0]} 转向 ${last.top1[0]},建议关注新市场的用户质量和留存表现。`;
+        }
+        h+='</li>';
+      }
+
+      // Market diversification analysis
+      const firstCountryCount=first.countries.length;
+      const lastCountryCount=last.countries.length;
+      h+=`<li><strong>市场覆盖变化:</strong> ${vers[0]} 覆盖 <strong class="num">${firstCountryCount}</strong> 个国家,${vers[vers.length-1]} 覆盖 <strong class="num">${lastCountryCount}</strong> 个国家,`;
+      if(lastCountryCount>firstCountryCount)h+=`市场覆盖扩大,买量策略向更多新兴市场延伸。`;
+      else if(lastCountryCount<firstCountryCount)h+=`市场覆盖收缩,可能聚焦于高ROI核心市场,需警惕长尾市场流失。`;
+      else h+=`市场覆盖数量保持不变。`;
+      h+='</li>';
+
+      // Emerging/declining markets
+      const countryGrowth={};
+      first.countries.forEach(([c,n])=>{countryGrowth[c]=(countryGrowth[c]||0)-n});
+      last.countries.forEach(([c,n])=>{countryGrowth[c]=(countryGrowth[c]||0)+n});
+      const growthList=Object.entries(countryGrowth).filter(e=>e[1]!==0).sort((a,b)=>b[1]-a[1]);
+      if(growthList.length>0){
+        const emerging=growthList[0];
+        const declining=growthList[growthList.length-1];
+        h+=`<li><strong>异动市场:</strong> `;
+        if(emerging[1]>0)h+=`${vers[vers.length-1]} 相比 ${vers[0]},<strong>${emerging[0]}</strong> 买量增幅最大(+${fmtInt(emerging[1])} 人)`;
+        if(declining[1]<0)h+=`${emerging[1]>0?',':''}<strong>${declining[0]}</strong> 流失最严重(${fmtInt(declining[1])} 人)`;
+        h+=`,建议重点分析异动原因。</li>`;
+      }
+    }else{
+      // Single version
+      const v=vers[0];
+      const vd=versionData[v];
+      const top1Pct=vd.top1?(vd.top1[1]/vd.total*100):0;
+      const top10Sum=vd.countries.slice(0,10).reduce((acc,e)=>acc+e[1],0);
+      const top10Pct=vd.total>0?(top10Sum/vd.total*100):0;
+      h+=`<li><strong>市场集中度:</strong> ${proj} ${v} 的买量高度集中于 <strong>${vd.top1[0]}</strong>(占比 ${top1Pct.toFixed(2)}%),TOP 10 国家合计占比 ${top10Pct.toFixed(2)}%,`;
+      h+=top1Pct>80?`单一市场依赖严重,建议拓展第二梯队市场以分散风险。`:`头部市场集中度适中,市场结构相对健康。`;
+      h+='</li>';
+      // Market efficiency insight
+      const avgUsersPerCountry=vd.total/vd.countries.length;
+      const aboveAvg=vd.countries.filter(e=>e[1]>avgUsersPerCountry).length;
+      h+=`<li><strong>市场效率:</strong> 平均每国买量 ${fmtInt(avgUsersPerCountry)} 人,仅 ${aboveAvg} 个国家高于均值,说明买量分布呈典型的"二八法则",头部少数市场贡献了大部分用户。</li>`;
+    }
+  }else{
+    // ===== 多项目对比深度分析 =====
+    const projAgg={};
+    S.projects.forEach(proj=>{
+      const pd=fData.filter(r=>r.project===proj);
+      const total=sum(pd.map(r=>r.newUsers));
+      const cAgg={};pd.forEach(r=>{cAgg[r.country]=(cAgg[r.country]||0)+r.newUsers});
+      const cSorted=Object.entries(cAgg).sort((a,b)=>b[1]-a[1]);
+      projAgg[proj]={total,countries:cSorted,top1:cSorted[0],countryCount:cSorted.length};
+    });
+    const projSorted=Object.entries(projAgg).sort((a,b)=>b[1].total-a[1].total);
+    const leader=projSorted[0];
+    const follower=projSorted[projSorted.length-1];
+    const leaderShare=totalUsers>0?(leader[1].total/totalUsers*100):0;
+
+    h+=`<li><strong>买量规模对比:</strong> ${projSorted.map(e=>`${e[0]} <strong class="num">${fmtInt(e[1].total)}</strong>人`).join(' / ')},${leader[0]} 占总买量 ${leaderShare.toFixed(2)}%,`;
+    if(projSorted.length===2){
+      const ratio=leader[1].total/follower[1].total;
+      h+=`是 ${follower[0]} 的 ${ratio.toFixed(1)} 倍,`;
+      h+=ratio>3?`两项目买量投入差距悬殊,资源分配严重不均。`:`两项目买量规模接近,投入相对均衡。`;
+    }else{
+      h+=`领先项目买量规模最大。`;
+    }
+    h+='</li>';
+
+    // Core market overlap analysis
+    const allTop1s=projSorted.map(e=>({proj:e[0],top1:e[1].top1}));
+    const sameTop1=allTop1s.every(e=>e.top1&&allTop1s[0].top1&&e.top1[0]===allTop1s[0].top1[0]);
+    h+=`<li><strong>核心市场${sameTop1?'一致性':'差异'}:</strong> `;
+    if(sameTop1){
+      h+=`各项目的第一大市场均为 <strong>${allTop1s[0].top1[0]}</strong>,买量策略高度趋同,`;
+      h+=`存在市场重叠竞争风险,建议错位布局差异化市场。`;
+    }else{
+      h+=allTop1s.map(e=>`${e.proj}→${e.top1[0]}`).join('、');
+      h+=`,各项目核心市场不同,市场布局差异化,有利于覆盖不同用户群体。`;
+    }
+    h+='</li>';
+
+    // Market coverage comparison
+    h+=`<li><strong>市场覆盖对比:</strong> ${projSorted.map(e=>`${e[0]} 覆盖 ${e[1].countryCount} 国`).join('、')},`;
+    const maxCov=Math.max(...projSorted.map(e=>e[1].countryCount));
+    const minCov=Math.min(...projSorted.map(e=>e[1].countryCount));
+    if(maxCov-minCov>3){
+      h+=`覆盖广度差异明显(${maxCov-minCov} 国差距),`;
+      const wideProj=projSorted.find(e=>e[1].countryCount===maxCov)[0];
+      h+=`${wideProj} 市场拓展更积极,长尾布局更完善。`;
+    }else{
+      h+=`各项目市场覆盖广度接近,全球化程度相当。`;
+    }
+    h+='</li>';
+
+    // Concentration comparison
+    const concentrations=projSorted.map(e=>{
+      const top1Pct=e[1].top1?(e[1].top1[1]/e[1].total*100):0;
+      return {proj:e[0],top1Pct,top1:e[1].top1};
+    });
+    const mostConcentrated=concentrations.reduce((a,b)=>b.top1Pct>a.top1Pct?b:a);
+    const leastConcentrated=concentrations.reduce((a,b)=>b.top1Pct<a.top1Pct?b:a);
+    h+=`<li><strong>集中度对比:</strong> ${mostConcentrated.proj} 对单一市场依赖最高(${mostConcentrated.top1[0]} 占 ${mostConcentrated.top1Pct.toFixed(2)}%),${leastConcentrated.proj} 分布最分散(第一大国仅 ${leastConcentrated.top1Pct.toFixed(2)}%),`;
+    h+=mostConcentrated.top1Pct>80?`${mostConcentrated.proj} 存在较高的单一市场风险。`:`各项目集中度差异不大。`;
+    h+='</li>';
+  }
+
+  h+='</ul></div>';
+  return h;
 }
 function buildCountryTable_Single(sel){
   const fData=filterCommon(sel());
@@ -15631,7 +15787,7 @@ function buildCountryTable_Single(sel){
           const fct={};fvData.forEach(r=>{fct[r.country]=(fct[r.country]||0)+r.newUsers});
           const ftotal=sum(Object.values(fct));const fnu=fct[c]||0;const fpct=ftotal>0?fnu/ftotal*100:0;
           const diff=pct-fpct;
-          h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${fmt(diff)}pp</td>`;
+          h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${Math.abs(diff).toFixed(2)}%</td>`;
         }
       });h+='</tr>';
     });
@@ -15666,32 +15822,65 @@ function buildCountryTable_Multi(sel){
 }
 function buildCountryTrendCharts(sel){
   let h='';
-  S.projects.forEach((proj,pi)=>{h+=`<div class="chart-box"><h4>${proj} - TOP 国家买量趋势</h4><div class="chart-container" id="chart-country-${pi}"></div></div>`});
+  if(S.mode==='single'){
+    // Single project: one chart per selected version
+    const proj=S.projects[0];
+    S.versions.forEach((v,vi)=>{
+      h+=`<div class="chart-box"><h4>${proj} - ${v} - TOP 10 国家买量趋势</h4><div class="chart-container" id="chart-country-${vi}"></div></div>`;
+    });
+  }else{
+    // Multi-project: one chart per project
+    S.projects.forEach((proj,pi)=>{h+=`<div class="chart-box"><h4>${proj} - TOP 10 国家买量趋势</h4><div class="chart-container" id="chart-country-${pi}"></div></div>`});
+  }
   return h;
 }
 function initCountryCharts(){
   const sel={projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions};
-  const dates=[...S.dates].sort();const colors=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7'];
-  S.projects.forEach((proj,pi)=>{
-    const chart=initChart('chart-country-'+pi);if(!chart)return;
-    const fData=filterCommon({...sel,projects:[proj]});
-    const ct={};COUNTRIES.forEach(c=>ct[c]=0);
-    fData.forEach(r=>{ct[r.country]=(ct[r.country]||0)+r.newUsers});
-    const top5=Object.entries(ct).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]);
-    const series={};top5.forEach(c=>series[c]=[]);
-    dates.forEach(dt=>{
-      const fd=filterCommon({...sel,projects:[proj],dates:[dt]});
-      const ctd={};top5.forEach(c=>ctd[c]=0);
-      fd.forEach(r=>{if(ctd[r.country]!=null)ctd[r.country]+=r.newUsers});
-      top5.forEach(c=>{const tot=Object.values(ctd).reduce((a,b)=>a+b,0);series[c].push(tot>0?(ctd[c]/tot*100):0)});
+  const dates=[...S.dates].sort();const colors=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
+  if(S.mode==='single'){
+    const proj=S.projects[0];
+    S.versions.forEach((v,vi)=>{
+      const chart=initChart('chart-country-'+vi);if(!chart)return;
+      const fData=filterCommon({...sel,projects:[proj],versions:[v]});
+      const ct={};COUNTRIES.forEach(c=>ct[c]=0);
+      fData.forEach(r=>{ct[r.country]=(ct[r.country]||0)+r.newUsers});
+      const top10=Object.entries(ct).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10).map(e=>e[0]);
+      const series={};top10.forEach(c=>series[c]=[]);
+      dates.forEach(dt=>{
+        const fd=filterCommon({...sel,projects:[proj],versions:[v],dates:[dt]});
+        const ctd={};top10.forEach(c=>ctd[c]=0);
+        fd.forEach(r=>{if(ctd[r.country]!=null)ctd[r.country]+=r.newUsers});
+        top10.forEach(c=>{const tot=Object.values(ctd).reduce((a,b)=>a+b,0);series[c].push(tot>0?(ctd[c]/tot*100):0)});
+      });
+      chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>v.toFixed(2)+'%'},
+        legend:{data:top10,textStyle:{color:'#94a3b8'},top:0,type:'scroll'},
+        grid:{left:50,right:20,top:40,bottom:40},
+        xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
+        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
+        series:top10.map((c,ci)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[ci%10]},lineStyle:{width:2}}))});
     });
-    chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>v.toFixed(1)+'%'},
-      legend:{data:top5,textStyle:{color:'#94a3b8'},top:0},
-      grid:{left:50,right:20,top:40,bottom:40},
-      xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
-      yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
-      series:top5.map((c,ci)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[ci%5]},lineStyle:{width:2}}))});
-  });
+  }else{
+    S.projects.forEach((proj,pi)=>{
+      const chart=initChart('chart-country-'+pi);if(!chart)return;
+      const fData=filterCommon({...sel,projects:[proj]});
+      const ct={};COUNTRIES.forEach(c=>ct[c]=0);
+      fData.forEach(r=>{ct[r.country]=(ct[r.country]||0)+r.newUsers});
+      const top10=Object.entries(ct).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,10).map(e=>e[0]);
+      const series={};top10.forEach(c=>series[c]=[]);
+      dates.forEach(dt=>{
+        const fd=filterCommon({...sel,projects:[proj],dates:[dt]});
+        const ctd={};top10.forEach(c=>ctd[c]=0);
+        fd.forEach(r=>{if(ctd[r.country]!=null)ctd[r.country]+=r.newUsers});
+        top10.forEach(c=>{const tot=Object.values(ctd).reduce((a,b)=>a+b,0);series[c].push(tot>0?(ctd[c]/tot*100):0)});
+      });
+      chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>v.toFixed(2)+'%'},
+        legend:{data:top10,textStyle:{color:'#94a3b8'},top:0,type:'scroll'},
+        grid:{left:50,right:20,top:40,bottom:40},
+        xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
+        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
+        series:top10.map((c,ci)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[ci%10]},lineStyle:{width:2}}))});
+    });
+  }
 }
 
 /* ============ TAB 2: 漏斗分析 ============ */
@@ -15747,7 +15936,7 @@ function buildFunnelOverview(sel){
       if(i>0){
         let fv;
         if(m.key.startsWith('_metric_')){fv=groups[keys[0]]?.metrics?.[m.key.slice(8)]}else{fv=groups[keys[0]]?.[m.key]}
-        if(m.isNum){const diff=(val||0)-(fv||0);const pct=fv?diff/fv*100:0;h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${fmtInt(diff)} (${diff>=0?'+':''}${fmt(pct)}%)</td>`}
+        if(m.isNum){const diff=(val||0)-(fv||0);const absPct=fv?Math.abs(diff/fv)*100:0;h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${absPct.toFixed(2)}%</td>`}
         else{h+=`<td>${cmpCell(fv,val,m.lower)}</td>`}
       }
     });h+='</tr>';
@@ -15879,7 +16068,7 @@ function buildNotifOverview(sel){
       h+=`<td class="num">${val!=null?(m.fmt?m.fmt(val):fmt(val)):'<span class="missing">-</span>'}</td>`;
       if(i>0){
         const fv=groups[first]?.[m.key];const cv=val;
-        if(m.isNum){const d=(cv||0)-(fv||0);h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}">${d>=0?'+':''}${fmtInt(d)}</td>`}
+        if(m.isNum){const d=(cv||0)-(fv||0);const absPct=fv?Math.abs(d/fv)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
         else{h+=`<td>${cmpCell(fv,cv,m.lower)}</td>`}
       }
     });h+='</tr>';
@@ -15940,10 +16129,10 @@ function buildNotifCopyTable(sel){
   keys.forEach((k,i)=>{
     const nu=sum(groups[k].rows.map(r=>r.newUsers));
     h+=`<td class="num" colspan="${colCount}">${fmtInt(nu)}</td>`;
-    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${fmtInt(d)}</td>`}
+    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;const absPct=fnu?Math.abs(d/fnu)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
   });h+='</tr>';
   NOTIF_CODES.forEach(code=>{
-    h+=`<tr><td class="num" style="color:var(--accent)">${code}</td><td>${NOTIF_MAP[code]?.label||'-'}</td>`;
+    h+=`<tr><td class="num" style="color:var(--accent)">${NOTIF_MAP[code]?.label||code}</td><td>${NOTIF_MAP[code]?.desc||code}</td>`;
     keys.forEach((k,i)=>{
       const tRows=timingData.filter(r=>groups[k].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisObject===code);
       const uv=tRows.length>0?wavg(tRows.map(r=>isClick?r.d0.clickRate:r.d0.showRate),tRows.map(r=>r.newUsers)):null;
@@ -15963,7 +16152,7 @@ function buildNotifCopyTable(sel){
 
 function buildNotifRankBars(sel){
   const targetDates=S.notifDate==='all'?[...S.dates]:[S.notifDate];
-  const fData=filterCommon({...sel(),dates:targetDates});
+  const fData=filterCommon({...sel,dates:targetDates});
   const allRows=timingData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version));
   const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r.d0.showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
   const showSorted=Object.entries(showRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws),label:NOTIF_MAP[k]?.label||k})).sort((a,b)=>b.rate-a.rate);
@@ -15999,7 +16188,7 @@ function buildNotifMap(){
   let h='<div class="notif-map">';
   NOTIF_CODES.forEach(code=>{
     const info=NOTIF_MAP[code]||{};
-    h+=`<div class="notif-map-item"><span class="nm-code">${code}</span><br><span class="nm-label">${info.label||''}:</span><span class="nm-name">${info.desc||''}</span></div>`;
+    h+=`<div class="notif-map-item"><span class="nm-code">${info.label||code}</span><br><span class="nm-label">${code}:</span><span class="nm-name">${info.desc||''}</span></div>`;
   });
   h+='</div>';return h;
 }
