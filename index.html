@@ -64,17 +64,17 @@ a{color:var(--accent);text-decoration:none}
 .brand-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);display:inline-block;box-shadow:0 0 6px var(--accent2)}
 .top-sticky{position:sticky;top:48px;z-index:90;background:var(--bg2)}
-.filter-bar{background:var(--bg2);border-bottom:1px solid var(--rule);padding:8px 16px}
-.filter-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px}
+.filter-bar{background:var(--bg2);border-bottom:1px solid var(--rule);padding:10px 16px;position:relative;z-index:500}
+.filter-row{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-bottom:8px}
 .filter-row:last-child{margin-bottom:0}
-.filter-group{display:flex;align-items:center;gap:4px;font-size:12px}
-.filter-group label{color:var(--muted);white-space:nowrap;min-width:48px;font-size:12px}
-.ms-wrap{position:relative;min-width:140px}
-.ms-trigger{background:var(--bg3);border:1px solid var(--rule);border-radius:5px;padding:4px 28px 4px 8px;cursor:pointer;font-size:12px;color:var(--ink);position:relative;min-height:28px;display:flex;align-items:center;flex-wrap:wrap;gap:2px}
+.filter-group{display:flex;align-items:center;gap:6px;font-size:12px}
+.filter-group label{color:var(--muted);white-space:nowrap;min-width:44px;font-size:12px;text-align:right}
+.ms-wrap{position:relative;min-width:130px;max-width:180px}
+.ms-trigger{background:var(--bg3);border:1px solid var(--rule);border-radius:5px;padding:5px 26px 5px 10px;cursor:pointer;font-size:12px;color:var(--ink);position:relative;min-height:30px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ms-trigger:hover{border-color:var(--accent)}
-.ms-trigger .ms-arrow{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted)}
+.ms-trigger .ms-arrow{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;color:var(--muted)}
 .ms-trigger.warn-empty{border-color:var(--warn)}
-.ms-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--rule);border-radius:5px;margin-top:3px;max-height:240px;overflow-y:auto;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.ms-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:200px;background:var(--bg2);border:1px solid var(--accent);border-radius:6px;max-height:300px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .ms-dropdown.open{display:block}
 .ms-option{padding:4px 8px;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px}
 .ms-option:hover{background:var(--bg3)}
@@ -183,6 +183,17 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:a
 .bar-row .bar-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative}
 .bar-row .bar-fill{height:100%;border-radius:4px;transition:width .3s}
 .bar-row .bar-val{min-width:60px;text-align:right;font-weight:500;font-size:12px}
+.rank-legend{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.rank-legend-item{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.rank-legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.rank-item{margin-bottom:10px;padding:8px 10px;background:var(--bg2);border-radius:6px;border:1px solid var(--rule)}
+.rank-item-label{font-size:13px;font-weight:600;margin-bottom:5px;color:var(--ink)}
+.rank-bars{display:flex;flex-direction:column;gap:3px}
+.rank-bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.rank-bar-tag{min-width:60px;text-align:right;font-weight:600;font-size:11px}
+.rank-bar-track{flex:1;height:16px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.rank-bar-val{min-width:55px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
 .insight-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px}
 .insight-card{background:var(--bg2);border-radius:8px;padding:16px 20px;border-left:3px solid var(--accent)}
 .insight-card.good{border-left-color:var(--accent2)}
@@ -204,7 +215,7 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:a
 .notif-map-item .nm-en{color:var(--muted);font-size:11px}
 .notif-map-item .nm-label{color:var(--muted);font-size:11px;margin-right:4px}
 .empty-state{text-align:center;padding:40px;color:var(--muted);font-size:15px}
-@media(max-width:768px){.filter-row{flex-direction:column;align-items:stretch}.ms-wrap{min-width:100%}.kpi-grid{grid-template-columns:1fr}.tab-content{padding:12px}}
+@media(max-width:768px){.filter-row{flex-direction:column;align-items:flex-start}.ms-wrap{min-width:160px;max-width:none}.kpi-grid{grid-template-columns:1fr}.tab-content{padding:12px}}
 </style>
 </head>
 <body>
@@ -14988,7 +14999,7 @@ const S={mode:'single',projects:['R319'],countries:[...COUNTRIES],dates:[...DATE
   m2Proj:'R319',m2Metric:'newUsers',
     m4Tab:0,m4d41:['all'],m4d43:['all'],m4d45:['all'],
   funnelMods:[...FUNNELS],funnelDate:'all',funnelPV:['uv'],
-  notifSC:'show',notifDate:'all',notifPV:['uv'],notifRankProj:[...PROJECTS],
+  notifSC:'show',notifDate:'all',notifPV:['uv'],notifRankProj:[...PROJECTS],notifRankVer:null,
   featPV:['uv'],featDate:'all'};
 const chartInst={};
 function disposeCharts(prefix){Object.keys(chartInst).forEach(k=>{if(!prefix||k.startsWith(prefix)){chartInst[k].dispose();delete chartInst[k]}})}
@@ -15670,60 +15681,83 @@ function renderM4(parent){
     ${dates.map(d=>`<button class="metric-btn ${S.m4d45.includes(d)?'active':''}" data-m4d45="${d}">${d.slice(5)}</button>`).join('')}
   </div>`;
 
-  // Sub 4.4: Feature click ranking bars
-  let featRankSingle, compRankSingle;
-  if(S.projects.length>1){
-    S.projects.forEach(pr=>{
-      html+=`<div class="sub-title">4.4 ${pr} - 功能模块点击率排行</div>`;
-      const fSel45P={...sel(),projects:[pr],dates:targetDates45};
-      const fRows=filterFeature(fSel45P,{type:'首页模块点击率'});
-      const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r[S.day]);featAgg[r.analysisObject].ws.push(r.newUsers)});
-      const featRank=Object.entries(featAgg).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
-      featRank.slice(0,15).forEach(item=>{
-        const pct=item.rate*100;const color=pct>20?'var(--accent2)':pct>10?'var(--accent)':'var(--amber)';
-        html+=`<div class="bar-row"><span class="bar-label" title="${item.name}">${item.name.length>12?item.name.slice(0,12)+'...':item.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
-      });
-    });
+  // Sub 4.4 & 4.5: Grouped ranking bars with version/project comparison
+  const isMultiProj45=S.mode==='compare';
+  const groupKey45=isMultiProj45?'project':'version';
+  const fSel45={...sel(),dates:targetDates45};
+  const fRows45=filterFeature(fSel45,{type:'首页模块点击率'});
+  let groups45;
+  if(isMultiProj45){
+    groups45=[...new Set(fRows45.map(r=>r.project))].sort();
   }else{
-    html+='<div class="sub-title">4.4 功能模块点击率排行</div>';
-    const fSel45={...sel(),dates:targetDates45};
-    const fRows=filterFeature(fSel45,{type:'首页模块点击率'});
-    const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r[S.day]);featAgg[r.analysisObject].ws.push(r.newUsers)});
-    featRankSingle=Object.entries(featAgg).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
-    featRankSingle.slice(0,15).forEach(item=>{
-      const pct=item.rate*100;const color=pct>20?'var(--accent2)':pct>10?'var(--accent)':'var(--amber)';
-      html+=`<div class="bar-row"><span class="bar-label" title="${item.name}">${item.name.length>12?item.name.slice(0,12)+'...':item.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
+    groups45=[...new Set(fRows45.map(r=>r.version))].sort().reverse();
+  }
+  const palette45=['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+  const gColors45={};groups45.forEach((g,i)=>{gColors45[g]=palette45[i%palette45.length]});
+
+  // Legend
+  if(groups45.length>0){
+    html+='<div class="rank-legend">';
+    groups45.forEach(g=>{html+=`<span class="rank-legend-item"><span class="rank-legend-dot" style="background:${gColors45[g]}"></span>${g}</span>`});
+    html+='</div>';
+  }
+
+  // Sub 4.4: Feature click ranking - grouped bars
+  html+='<div class="sub-title">4.4 功能模块点击率排行</div>';
+  {
+    const featAgg45={};fRows45.forEach(r=>{
+      const g=r[groupKey45];if(!groups45.includes(g))return;
+      const name=r.analysisObject;
+      if(!featAgg45[name])featAgg45[name]={};
+      if(!featAgg45[name][g])featAgg45[name][g]={vals:[],ws:[]};
+      featAgg45[name][g].vals.push(r[S.day]);featAgg45[name][g].ws.push(r.newUsers);
+    });
+    const featData45=Object.entries(featAgg45).map(([name,gd])=>{
+      const rates={};let maxR=0;
+      groups45.forEach(g=>{if(gd[g]){const r=wavg(gd[g].vals,gd[g].ws);rates[g]=r;if(r>maxR)maxR=r}});
+      return{name,rates,maxR};
+    }).filter(d=>d.maxR>0).sort((a,b)=>b.maxR-a.maxR);
+    const featMax45=Math.max(...featData45.flatMap(d=>Object.values(d.rates)),0.001);
+    featData45.slice(0,15).forEach(item=>{
+      const dispName=item.name.length>14?item.name.slice(0,14)+'...':item.name;
+      html+=`<div class="rank-item"><div class="rank-item-label" title="${item.name}">${dispName}</div><div class="rank-bars">`;
+      groups45.forEach(g=>{
+        const rate=item.rates[g]||0;const pct=rate*100;const wpct=(rate/featMax45)*100;
+        html+=`<div class="rank-bar-row"><span class="rank-bar-tag" style="color:${gColors45[g]}">${g}</span><div class="rank-bar-track"><div class="rank-bar-fill" style="width:${wpct}%;background:${gColors45[g]}"></div></div><span class="rank-bar-val num">${fmt(pct,2)}%</span></div>`;
+      });
+      html+='</div></div>';
     });
   }
 
-  // Sub 4.5: Feature completion ranking bars
-  if(S.projects.length>1){
-    S.projects.forEach(pr=>{
-      html+=`<div class="sub-title">4.5 ${pr} - 功能模块使用完成率排行</div>`;
-      const fSel45P={...sel(),projects:[pr],dates:targetDates45};
-      const compRate={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
-        const fr=filterFeature(fSel45P,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});
+  // Sub 4.5: Feature completion ranking - grouped bars
+  html+='<div class="sub-title">4.5 功能模块使用完成率排行</div>';
+  {
+    const compAgg45={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
+      groups45.forEach(g=>{
+        const fSelG={...fSel45,dates:targetDates45};
+        if(isMultiProj45){fSelG.projects=[g]}else{fSelG.versions=[g]}
+        const fr=filterFeature(fSelG,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});
+        if(fr.length===0)return;
         const vals=[],ws=[];fr.forEach(r=>{vals.push(r[S.day]);ws.push(r.newUsers)});
-        compRate[fn]=wavg(vals,ws);
-      });
-      const compRank=Object.entries(compRate).map(([k,v])=>({name:k.replace('功能漏斗',''),rate:v})).filter(x=>x.rate!=null).sort((a,b)=>b.rate-a.rate);
-      compRank.forEach(item=>{
-        const pct=item.rate*100;const color=pct>40?'var(--accent2)':pct>25?'var(--accent)':'var(--amber)';
-        html+=`<div class="bar-row"><span class="bar-label">${item.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
+        const rate=wavg(vals,ws);
+        const name=fn.replace('功能漏斗','');
+        if(!compAgg45[name])compAgg45[name]={};
+        compAgg45[name][g]=rate;
       });
     });
-  }else{
-    html+='<div class="sub-title">4.5 功能模块使用完成率排行</div>';
-    const fSel45={...sel(),dates:targetDates45};
-    const compRate={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
-      const fr=filterFeature(fSel45,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});
-      const vals=[],ws=[];fr.forEach(r=>{vals.push(r[S.day]);ws.push(r.newUsers)});
-      compRate[fn]=wavg(vals,ws);
-    });
-    compRankSingle=Object.entries(compRate).map(([k,v])=>({name:k.replace('功能漏斗',''),rate:v})).filter(x=>x.rate!=null).sort((a,b)=>b.rate-a.rate);
-    compRankSingle.forEach(item=>{
-      const pct=item.rate*100;const color=pct>40?'var(--accent2)':pct>25?'var(--accent)':'var(--amber)';
-      html+=`<div class="bar-row"><span class="bar-label">${item.name}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
+    const compData45=Object.entries(compAgg45).map(([name,gd])=>{
+      const rates={};let maxR=0;
+      groups45.forEach(g=>{if(gd[g]!=null){rates[g]=gd[g];if(gd[g]>maxR)maxR=gd[g]}})
+      return{name,rates,maxR};
+    }).filter(d=>d.maxR>0).sort((a,b)=>b.maxR-a.maxR);
+    const compMax45=Math.max(...compData45.flatMap(d=>Object.values(d.rates)),0.001);
+    compData45.forEach(item=>{
+      html+=`<div class="rank-item"><div class="rank-item-label">${item.name}</div><div class="rank-bars">`;
+      groups45.forEach(g=>{
+        const rate=item.rates[g]||0;const pct=rate*100;const wpct=(rate/compMax45)*100;
+        html+=`<div class="rank-bar-row"><span class="rank-bar-tag" style="color:${gColors45[g]}">${g}</span><div class="rank-bar-track"><div class="rank-bar-fill" style="width:${wpct}%;background:${gColors45[g]}"></div></div><span class="rank-bar-val num">${fmt(pct,2)}%</span></div>`;
+      });
+      html+='</div></div>';
     });
   }
 
@@ -16303,15 +16337,12 @@ function renderTab3(){
   html+=buildNotifCopyFilters();
   html+=buildNotifCopyTable(sel);
   html+='<div class="section-title">M5: 文案排行</div>';
-  html+=`<div class="local-filter"><div class="filter-group"><span class="filter-label">项目</span>${PROJECTS.map(pr=>`<button class="metric-btn ${S.notifRankProj.includes(pr)?'active':''}" data-nrankp="${pr}">${pr}</button>`).join('')}</div><div class="filter-group"><span class="filter-label">日期</span><button class="metric-btn ${S.notifDate==='all'?'active':''}" data-ndate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.notifDate===dt?'active':''}" data-ndate="${dt}">${dt.slice(5)}</button>`).join('')}</div></div>`;
-  if(S.notifRankProj.length>1){
-    S.notifRankProj.forEach(pr=>{
-      html+=`<div class="sub-title">${pr} - 文案排行</div>`;
-      html+=buildNotifRankBars({...sel(),projects:[pr]});
-    });
-  }else{
-    html+=buildNotifRankBars({...sel(),projects:S.notifRankProj});
-  }
+  const rankFilterLabel=S.mode==='compare'?'项目':'版本';
+  const rankFilterBtns=S.mode==='compare'
+    ?PROJECTS.map(pr=>`<button class="metric-btn ${S.notifRankProj.includes(pr)?'active':''}" data-nrankp="${pr}">${pr}</button>`).join('')
+    :S.versions.map(v=>`<button class="metric-btn ${(!S.notifRankVer||S.notifRankVer.includes(v))?'active':''}" data-nrankv="${v}">${v}</button>`).join('');
+  html+=`<div class="local-filter"><div class="filter-group"><span class="filter-label">${rankFilterLabel}</span>${rankFilterBtns}</div><div class="filter-group"><span class="filter-label">日期</span><button class="metric-btn ${S.notifDate==='all'?'active':''}" data-ndate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.notifDate===dt?'active':''}" data-ndate="${dt}">${dt.slice(5)}</button>`).join('')}</div></div>`;
+  html+=buildNotifRankBars(sel());
   html+=buildNotifCopySummary();
   html+='<div class="section-title">M7: 通知文案代号映射表</div>';
   html+=buildNotifMap();
@@ -16321,6 +16352,7 @@ function renderTab3(){
     p.querySelectorAll('[data-ndate]').forEach(b=>b.onclick=()=>{S.notifDate=b.dataset.ndate;renderTab3()});
     p.querySelectorAll('[data-npv]').forEach(b=>b.onclick=()=>{const v=b.dataset.npv;if(b.classList.contains('active')){if(S.notifPV.length<=1)return;S.notifPV=S.notifPV.filter(x=>x!==v)}else{S.notifPV.push(v)}renderTab3()});
     p.querySelectorAll('[data-nrankp]').forEach(b=>b.onclick=()=>{const v=b.dataset.nrankp;if(b.classList.contains('active')){if(S.notifRankProj.length<=1)return;S.notifRankProj=S.notifRankProj.filter(x=>x!==v)}else{S.notifRankProj.push(v)}renderTab3()});
+    p.querySelectorAll('[data-nrankv]').forEach(b=>b.onclick=()=>{const v=b.dataset.nrankv;if(!S.notifRankVer)S.notifRankVer=[...S.versions];if(b.classList.contains('active')){if(S.notifRankVer.length<=1)return;S.notifRankVer=S.notifRankVer.filter(x=>x!==v)}else{S.notifRankVer.push(v)}renderTab3()});
   },10);
 }
 
@@ -16434,19 +16466,67 @@ function buildNotifRankBars(sel){
   const targetDates=S.notifDate==='all'?[...S.dates]:[S.notifDate];
   const fData=filterCommon({...sel,dates:targetDates});
   const allRows=timingData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version));
-  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r[S.day].showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
-  const showSorted=Object.entries(showRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws),label:NOTIF_MAP[k]?.label||k})).sort((a,b)=>b.rate-a.rate);
-  let h='<div style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--accent2)">展示排行</div>';
-  showSorted.forEach(item=>{
-    const pct=item.rate*100;const color=pct>35?'var(--accent2)':pct>25?'var(--accent)':'var(--amber)';
-    h+=`<div class="bar-row"><span class="bar-label">${item.code}: ${item.label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
+  if(allRows.length===0)return'<div class="empty-state">暂无数据</div>';
+  const isMultiProj=S.mode==='compare';
+  const groupKey=isMultiProj?'project':'version';
+  let groups;
+  if(isMultiProj){
+    groups=S.notifRankProj.filter(pr=>allRows.some(r=>r.project===pr));
+  }else{
+    const verFilter=S.notifRankVer||S.versions;
+    groups=[...new Set(allRows.filter(r=>verFilter.includes(r.version)).map(r=>r.version))].sort().reverse();
+  }
+  if(groups.length===0)groups=[...new Set(allRows.map(r=>r[groupKey]))].sort();
+  const palette=['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+  const groupColors={};groups.forEach((g,i)=>{groupColors[g]=palette[i%palette.length]});
+  let h=`<div class="rank-legend">`;
+  groups.forEach(g=>{h+=`<span class="rank-legend-item"><span class="rank-legend-dot" style="background:${groupColors[g]}"></span>${g}</span>`});
+  h+='</div>';
+  const showRank={};allRows.forEach(r=>{
+    if(isMultiProj&&!groups.includes(r.project))return;
+    if(!isMultiProj&&!groups.includes(r.version))return;
+    const code=r.analysisObject;const g=r[groupKey];
+    if(!showRank[code])showRank[code]={};
+    if(!showRank[code][g])showRank[code][g]={vals:[],ws:[]};
+    showRank[code][g].vals.push(r[S.day].showRate);showRank[code][g].ws.push(r.newUsers);
   });
-  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r[S.day].clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
-  const clickSorted=Object.entries(clickRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws),label:NOTIF_MAP[k]?.label||k})).sort((a,b)=>b.rate-a.rate);
-  h+='<div style="font-size:15px;font-weight:600;margin:12px 0 8px;color:var(--accent2)">点击排行</div>';
-  clickSorted.forEach(item=>{
-    const pct=item.rate*100;const color=pct>12?'var(--accent2)':pct>7?'var(--accent)':'var(--amber)';
-    h+=`<div class="bar-row"><span class="bar-label">${item.code}: ${item.label}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct*5,100)}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
+  const showData=Object.entries(showRank).map(([code,gd])=>{
+    const rates={};let maxR=0;
+    groups.forEach(g=>{if(gd[g]){const r=wavg(gd[g].vals,gd[g].ws);rates[g]=r;if(r>maxR)maxR=r}});
+    return{code,label:NOTIF_MAP[code]?.label||code,rates,maxR};
+  }).filter(d=>d.maxR>0).sort((a,b)=>b.maxR-a.maxR);
+  const showMax=Math.max(...showData.flatMap(d=>Object.values(d.rates)),0.001);
+  h+='<div style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--accent2)">展示排行</div>';
+  showData.forEach(item=>{
+    h+=`<div class="rank-item"><div class="rank-item-label">${item.code}: ${item.label}</div><div class="rank-bars">`;
+    groups.forEach(g=>{
+      const rate=item.rates[g]||0;const pct=rate*100;const wpct=(rate/showMax)*100;
+      h+=`<div class="rank-bar-row"><span class="rank-bar-tag" style="color:${groupColors[g]}">${g}</span><div class="rank-bar-track"><div class="rank-bar-fill" style="width:${wpct}%;background:${groupColors[g]}"></div></div><span class="rank-bar-val num">${fmt(pct,2)}%</span></div>`;
+    });
+    h+='</div></div>';
+  });
+  const clickRank={};allRows.forEach(r=>{
+    if(isMultiProj&&!groups.includes(r.project))return;
+    if(!isMultiProj&&!groups.includes(r.version))return;
+    const code=r.analysisObject;const g=r[groupKey];
+    if(!clickRank[code])clickRank[code]={};
+    if(!clickRank[code][g])clickRank[code][g]={vals:[],ws:[]};
+    clickRank[code][g].vals.push(r[S.day].clickRate);clickRank[code][g].ws.push(r.newUsers);
+  });
+  const clickData=Object.entries(clickRank).map(([code,gd])=>{
+    const rates={};let maxR=0;
+    groups.forEach(g=>{if(gd[g]){const r=wavg(gd[g].vals,gd[g].ws);rates[g]=r;if(r>maxR)maxR=r}});
+    return{code,label:NOTIF_MAP[code]?.label||code,rates,maxR};
+  }).filter(d=>d.maxR>0).sort((a,b)=>b.maxR-a.maxR);
+  const clickMax=Math.max(...clickData.flatMap(d=>Object.values(d.rates)),0.001);
+  h+='<div style="font-size:15px;font-weight:600;margin:14px 0 8px;color:var(--accent2)">点击排行</div>';
+  clickData.forEach(item=>{
+    h+=`<div class="rank-item"><div class="rank-item-label">${item.code}: ${item.label}</div><div class="rank-bars">`;
+    groups.forEach(g=>{
+      const rate=item.rates[g]||0;const pct=rate*100;const wpct=(rate/clickMax)*100;
+      h+=`<div class="rank-bar-row"><span class="rank-bar-tag" style="color:${groupColors[g]}">${g}</span><div class="rank-bar-track"><div class="rank-bar-fill" style="width:${wpct}%;background:${groupColors[g]}"></div></div><span class="rank-bar-val num">${fmt(pct,2)}%</span></div>`;
+    });
+    h+='</div></div>';
   });
   return h;
 }
@@ -16454,14 +16534,28 @@ function buildNotifRankBars(sel){
 function buildNotifCopySummary(){
   const fData=filterCommon({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
   const allRows=timingData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version));
-  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r[S.day].showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
-  const best=Object.entries(showRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate)[0];
-  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r[S.day].clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
-  const bestC=Object.entries(clickRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate)[0];
-  return`<div class="summary-box"><ul>
-  <li>展示率最高的文案:<strong>${best?.code||'-'}(${NOTIF_MAP[best?.code]?.label||'-'})</strong>(${fmt(best?.rate*100)}%)。</li>
-  <li>点击率最高的文案:<strong>${bestC?.code||'-'}(${NOTIF_MAP[bestC?.code]?.label||'-'})</strong>(${fmt(bestC?.rate*100)}%)。</li>
-  <li>建议增加高点击率文案的推送比例,减少低效文案曝光。</li></ul></div>`;
+  const isMultiProj=S.mode==='compare';
+  const groupKey=isMultiProj?'project':'version';
+  const groups=[...new Set(allRows.map(r=>r[groupKey]))].sort();
+  const showRank={};allRows.forEach(r=>{const code=r.analysisObject,g=r[groupKey];if(!showRank[code])showRank[code]={};if(!showRank[code][g])showRank[code][g]={vals:[],ws:[]};showRank[code][g].vals.push(r[S.day].showRate);showRank[code][g].ws.push(r.newUsers)});
+  const bestPerGroup={};groups.forEach(g=>{const items=Object.entries(showRank).filter(([k,v])=>v[g]).map(([k,v])=>({code:k,rate:wavg(v[g].vals,v[g].ws)})).sort((a,b)=>b.rate-a.rate)[0];if(items)bestPerGroup[g]=items});
+  const clickRank={};allRows.forEach(r=>{const code=r.analysisObject,g=r[groupKey];if(!clickRank[code])clickRank[code]={};if(!clickRank[code][g])clickRank[code][g]={vals:[],ws:[]};clickRank[code][g].vals.push(r[S.day].clickRate);clickRank[code][g].ws.push(r.newUsers)});
+  const bestCPerGroup={};groups.forEach(g=>{const items=Object.entries(clickRank).filter(([k,v])=>v[g]).map(([k,v])=>({code:k,rate:wavg(v[g].vals,v[g].ws)})).sort((a,b)=>b.rate-a.rate)[0];if(items)bestCPerGroup[g]=items});
+  let h='<div class="summary-box"><ul>';
+  const gLabel=isMultiProj?'项目':'版本';
+  groups.forEach(g=>{
+    const b=bestPerGroup[g],bc=bestCPerGroup[g];
+    h+=`<li><strong>${gLabel} ${g}</strong>:展示率最高 <strong>${b?.code||'-'}(${NOTIF_MAP[b?.code]?.label||'-'})</strong> ${fmt(b?.rate*100||0,2)}%,点击率最高 <strong>${bc?.code||'-'}(${NOTIF_MAP[bc?.code]?.label||'-'})</strong> ${fmt(bc?.rate*100||0,2)}%。</li>`;
+  });
+  if(groups.length>1){
+    const allShow=groups.map(g=>({g,rate:bestPerGroup[g]?.rate||0})).sort((a,b)=>b.rate-a.rate);
+    const allClick=groups.map(g=>({g,rate:bestCPerGroup[g]?.rate||0})).sort((a,b)=>b.rate-a.rate);
+    const showGap=((allShow[0].rate-allShow[allShow.length-1].rate)*100);
+    const clickGap=((allClick[0].rate-allClick[allClick.length-1].rate)*100);
+    h+=`<li>${gLabel}对比:展示率最优为 <strong>${allShow[0].g}</strong>,领先 ${fmt(showGap,2)}个百分点;点击率最优为 <strong>${allClick[0].g}</strong>,领先 ${fmt(clickGap,2)}个百分点。</li>`;
+  }
+  h+='<li>建议增加高点击率文案的推送比例,减少低效文案曝光。</li></ul></div>';
+  return h;
 }
 
 function buildNotifMap(){
