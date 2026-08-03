@@ -151,6 +151,11 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
 .bi-table tr:hover td:first-child{background:var(--bg)}
 .bi-table .section-row td{background:rgba(59,130,246,.15);font-weight:600}
 .bi-table .section-row td:first-child{background:rgba(59,130,246,.2)}
+.bi-table th.proj-group{background:var(--bg2);border-bottom:2px solid var(--accent);font-size:14px;color:var(--ink);text-align:center}
+.bi-table th.proj-group.alt{background:var(--bg3)}
+.bi-table th.cmp-group{background:rgba(245,158,11,.12);border-bottom:2px solid var(--amber);color:var(--amber)}
+.bi-table th.sub-th{font-size:11px;font-weight:500;color:var(--muted)}
+.bi-table td.proj-divider{border-left:2px solid var(--rule)}
 .cmp-up{color:var(--accent2)}.cmp-down{color:var(--warn)}
 .missing{color:var(--muted);font-style:italic}
 .summary-box{background:var(--bg2);border-radius:8px;padding:20px 24px;margin:16px 0;font-size:14px;line-height:1.9}
@@ -188,6 +193,9 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
 .local-filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px;position:relative;z-index:10}
 .local-filter .metric-btn{cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s}
 .local-filter .metric-btn:hover{opacity:.85;transform:translateY(-1px)}
+.filter-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0}
+.filter-group+.filter-group{border-top:1px solid var(--rule);margin-top:4px;padding-top:10px}
+.filter-label{color:var(--muted);font-size:12px;font-weight:600;min-width:70px;flex-shrink:0}
 .notif-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px 0}
 .notif-map-item{background:var(--bg2);padding:8px 12px;border-radius:6px;font-size:12px}
 .notif-map-item .nm-code{color:var(--accent);font-weight:600}
@@ -14978,9 +14986,9 @@ const S={mode:'single',projects:['R319'],countries:[...COUNTRIES],dates:[...DATE
   versionUserSet:false,day:'d0',
   m2Proj:'R319',m2Metric:'newUsers',
     m4Tab:0,m4d41:['all'],m4d43:['all'],m4d45:['all'],
-  funnelMods:[...FUNNELS],funnelDate:'all',funnelPV:['pv','uv'],
-  notifSC:'show',notifDate:'all',notifPV:['pv','uv'],notifRankProj:[...PROJECTS],
-  featPV:['pv','uv'],featDate:'all'};
+  funnelMods:[...FUNNELS],funnelDate:'all',funnelPV:['uv'],
+  notifSC:'show',notifDate:'all',notifPV:['uv'],notifRankProj:[...PROJECTS],
+  featPV:['uv'],featDate:'all'};
 const chartInst={};
 function disposeCharts(prefix){Object.keys(chartInst).forEach(k=>{if(!prefix||k.startsWith(prefix)){chartInst[k].dispose();delete chartInst[k]}})}
 function initChart(id){const el=document.getElementById(id);if(!el)return null;if(chartInst[id]){chartInst[id].dispose()}const c=echarts.init(el);chartInst[id]=c;return c}
@@ -15141,8 +15149,21 @@ function renderAll(){
 function buildCmpTable(title,metrics,groups,keys,compareKey){
   if(!keys||!Array.isArray(keys)||keys.length===0)return '';
   const first=keys[0];
-  let h=`<div style="font-size:15px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>`;
-  keys.forEach(k=>{h+=`<th>${k}</th>`;if(k!==first)h+=`<th>对比值</th>`});
+  let h=`<div style="font-size:15px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead>`;
+  /* Row 1: project group headers */
+  h+=`<tr><th rowspan="2">指标</th>`;
+  keys.forEach((k,i)=>{
+    const cls=i%2===1?'proj-group alt':'proj-group';
+    h+=`<th class="${cls}" colspan="${i>0?2:1}">${k}</th>`;
+    if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`;
+  });
+  h+='</tr>';
+  /* Row 2: sub headers */
+  h+='<tr>';
+  keys.forEach((k,i)=>{
+    h+=`<th class="sub-th">${i===0?'基准':''}</th>`;
+    if(i>0)h+='<th class="sub-th">数值</th>';
+  });
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
     h+='<tr><td>'+m.label+'</td>';
@@ -15181,16 +15202,17 @@ function buildPVUVTableHeader(keys,label,pvuv){
   const colCount=(showPV?1:0)+(showUV?1:0);
   let r1=`<tr><th rowspan="2">${label||''}</th>`;
   keys.forEach((k,i)=>{
-    r1+=`<th colspan="${colCount}" style="text-align:center">${k}</th>`;
-    if(i>0)r1+=`<th colspan="${colCount}" style="text-align:center">对比值</th>`;
+    const cls=i%2===1?'proj-group alt':'proj-group';
+    r1+=`<th class="${cls}" colspan="${colCount}" style="text-align:center">${k}</th>`;
+    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:center">对比值</th>`;
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
-    if(showPV)r2+='<th style="text-align:center">PV</th>';
-    if(showUV)r2+='<th style="text-align:center">UV</th>';
+    if(showPV)r2+='<th class="sub-th" style="text-align:center">PV</th>';
+    if(showUV)r2+='<th class="sub-th" style="text-align:center">UV</th>';
     if(i>0){
-      if(showPV)r2+='<th style="text-align:center">PV对比</th>';
-      if(showUV)r2+='<th style="text-align:center">UV对比</th>';
+      if(showPV)r2+='<th class="sub-th" style="text-align:center">PV对比</th>';
+      if(showUV)r2+='<th class="sub-th" style="text-align:center">UV对比</th>';
     }
   });
   return r1+'</tr>'+r2+'</tr>';
@@ -16060,8 +16082,7 @@ function renderTab2(){
   const p=document.getElementById('panel-2');
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));p.classList.add('active');
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
-  let html='<div class="section-title">M1: 筛选条件</div><div class="local-filter"><span style="color:var(--muted)">使用全局筛选条件分析功能漏斗转化</span></div>';
-  html+='<div class="section-title">M2: 漏斗转化率总览</div>';
+  let html='<div class="section-title">M2: 漏斗转化率总览</div>';
   html+=buildFunnelOverview(sel);
   html+=buildFunnelSummary();
   html+='<div class="section-title">M4: 分模块漏斗分析</div>';
@@ -16093,8 +16114,11 @@ function buildFunnelOverview(sel){
   });
   const metrics=[{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true}];
   funnelMetrics.forEach(fm=>{metrics.push({key:'_metric_'+fm,label:fm,fmt:v=>v!=null?fmtPct(v):'-',lower:false})});
-  let h='<div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>';
-  keys.forEach((k,i)=>{h+=`<th>${k}</th>`;if(i>0)h+=`<th>对比值</th>`});
+  let h='<div class="table-wrap"><table class="bi-table"><thead>';
+  h+=`<tr><th rowspan="2">指标</th>`;
+  keys.forEach((k,i)=>{const cls=i%2===1?'proj-group alt':'proj-group';h+=`<th class="${cls}">${k}</th>`;if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`});
+  h+='</tr><tr>';
+  keys.forEach((k,i)=>{h+=`<th class="sub-th">${i===0?'基准':''}</th>`;if(i>0)h+='<th class="sub-th">数值</th>'});
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
     h+='<tr><td>'+m.label+'</td>';
@@ -16118,31 +16142,124 @@ function buildFunnelOverview(sel){
 
 // FIX: use let instead of const for bestFunnel/worstFunnel (Bug #1)
 function buildFunnelSummary(){
-  const fData=filterCommon({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
-  let bestFunnel={name:'',rate:0};
-  let worstFunnel={name:'',rate:1};
-  FUNNELS.forEach(fn=>{
-    const lastStep=fn==='首次启动流程漏斗'?'新用户首次首页曝光':fn.replace('漏斗','')+'完成结果页';
-    const rows=featureData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===lastStep);
-    if(rows.length>0){
-      const rate=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
-      if(rate!=null&&rate>bestFunnel.rate){bestFunnel={name:fn,rate:rate}}
-      if(rate!=null&&rate<worstFunnel.rate){worstFunnel={name:fn,rate:rate}}
+  const sel={projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions};
+  const fData=filterCommon(sel);
+  let h='<div class="summary-box"><ul>';
+
+  if(S.mode==='single'){
+    /* ===== 单项目：分版本总结 + 版本间对比 ===== */
+    const proj=S.projects[0];
+    const verData={};
+    S.versions.forEach(v=>{
+      const vd=filterCommon({...sel,versions:[v]});
+      if(vd.length===0)return;
+      const vFunnels=[];
+      let vBest={name:'',rate:0};
+      let vWorst={name:'',rate:1};
+      let vTotalNU=sum(vd.map(r=>r.newUsers));
+      FUNNELS.forEach(fn=>{
+        const lastStep=fn==='首次启动流程漏斗'?'新用户首次首页曝光':fn.replace('漏斗','')+'完成结果页';
+        const rows=featureData.filter(r=>vd.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===lastStep);
+        if(rows.length>0){
+          const rate=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
+          vFunnels.push({name:fn,rate});
+          if(rate!=null&&rate>vBest.rate)vBest={name:fn,rate:rate};
+          if(rate!=null&&rate<vWorst.rate)vWorst={name:fn,rate:rate};
+        }
+      });
+      verData[v]={totalNU:vTotalNU,best:vBest,worst:vWorst,funnels:vFunnels};
+    });
+    const versions=Object.keys(verData);
+    if(versions.length===0){
+      h+='<li><span class="si-body">当前筛选条件下暂无漏斗数据。</span></li>';
+    }else{
+      /* 分版本总结 */
+      versions.forEach(v=>{
+        const d=verData[v];
+        h+=`<li><span class="si-title">版本 ${v} 概况</span><span class="si-body">新用户 <strong class="num">${fmtInt(d.totalNU)}</strong> 人，转化率最高的漏斗为 <strong>${d.best.name||'-'}</strong>（${fmt(d.best.rate*100)}%），最低为 <strong>${d.worst.name||'-'}</strong>（${fmt(d.worst.rate*100)}%）。`;
+        if(d.worst.rate<0.05)h+=`${d.worst.name.replace('功能漏斗','')} 完成率极低，需重点优化用户引导流程。`;
+        h+='</span></li>';
+      });
+      /* 版本间对比 */
+      if(versions.length>=2){
+        const sorted=versions.sort();
+        const v1=sorted[0];
+        const v2=sorted[sorted.length-1];
+        const d1=verData[v1];
+        const d2=verData[v2];
+        h+=`<li><span class="si-title">版本间对比（${v1} → ${v2}）</span><span class="si-body">`;
+        /* new users comparison */
+        const nuDiff=d2.totalNU-d1.totalNU;
+        const nuPct=d1.totalNU>0?(nuDiff/d1.totalNU*100):0;
+        h+=`新用户数${nuDiff>=0?'增长':'减少'} <strong class="num">${Math.abs(nuDiff)>=0?'+':''}${fmtInt(nuDiff)}</strong>（${nuPct>=0?'+':''}${nuPct.toFixed(2)}%）。`;
+        /* best funnel comparison */
+        if(d1.best.name&&d2.best.name&&d1.best.name===d2.best.name){
+          const rateDiff=d2.best.rate-d1.best.rate;
+          h+=`最佳漏斗 <strong>${d1.best.name.replace('功能漏斗','')}</strong> 转化率${rateDiff>=0?'提升':'下降'} <strong class="num">${Math.abs(rateDiff*100).toFixed(2)}%</strong>。`;
+        }
+        /* worst funnel improvement */
+        if(d1.worst.name&&d2.worst.name){
+          if(d1.worst.name===d2.worst.name){
+            const wDiff=d2.worst.rate-d1.worst.rate;
+            h+=`短板漏斗 <strong>${d1.worst.name.replace('功能漏斗','')}</strong> 完成率${wDiff>=0?'改善':'恶化'} <strong class="num">${Math.abs(wDiff*100).toFixed(2)}%</strong>。`;
+          }else{
+            h+=`短板漏斗从 <strong>${d1.worst.name.replace('功能漏斗','')}</strong>（${fmt(d1.worst.rate*100)}%）变为 <strong>${d2.worst.name.replace('功能漏斗','')}</strong>（${fmt(d2.worst.rate*100)}%）。`;
+          }
+        }
+        h+='</span></li>';
+      }
     }
-  });
-  return`<div class="summary-box"><ul>
-  <li>转化率最高的漏斗:<strong>${bestFunnel.name||'-'}</strong>(${fmt(bestFunnel.rate*100)}%)。</li>
-  <li>转化率最低的漏斗:<strong>${worstFunnel.name||'-'}</strong>(${fmt(worstFunnel.rate*100)}%),建议优化用户引导。</li>
-  <li>整体来看,大部分功能漏斗的完成率集中在 20%-50% 之间,存在较大优化空间。</li></ul></div>`;
+  }else{
+    /* ===== 多项目模式 ===== */
+    let bestFunnel={name:'',rate:0};
+    let worstFunnel={name:'',rate:1};
+    FUNNELS.forEach(fn=>{
+      const lastStep=fn==='首次启动流程漏斗'?'新用户首次首页曝光':fn.replace('漏斗','')+'完成结果页';
+      const rows=featureData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===lastStep);
+      if(rows.length>0){
+        const rate=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
+        if(rate!=null&&rate>bestFunnel.rate){bestFunnel={name:fn,rate:rate}}
+        if(rate!=null&&rate<worstFunnel.rate){worstFunnel={name:fn,rate:rate}}
+      }
+    });
+    h+=`<li><span class="si-title">整体漏斗表现</span><span class="si-body">转化率最高的漏斗：<strong>${bestFunnel.name||'-'}</strong>（${fmt(bestFunnel.rate*100)}%），最低：<strong>${worstFunnel.name||'-'}</strong>（${fmt(worstFunnel.rate*100)}%）。`;
+    h+=worstFunnel.rate<0.05?'最低完成率极低，需重点优化用户引导。':'大部分功能漏斗完成率集中在 20%-50% 之间，存在优化空间。';
+    h+='</span></li>';
+    /* per-project comparison */
+    const projFunnel={};
+    S.projects.forEach(proj=>{
+      const pd=filterCommon({...sel,projects:[proj]});
+      const rates={};
+      FUNNELS.forEach(fn=>{
+        const lastStep=fn==='首次启动流程漏斗'?'新用户首次首页曝光':fn.replace('漏斗','')+'完成结果页';
+        const rows=featureData.filter(r=>pd.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===lastStep);
+        if(rows.length>0)rates[fn]=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
+      });
+      const vals=Object.values(rates).filter(v=>v!=null);
+      projFunnel[proj]={avg:vals.length>0?avg(vals):0,best:Object.entries(rates).sort((a,b)=>b[1]-a[1])[0],worst:Object.entries(rates).sort((a,b)=>a[1]-b[1])[0]};
+    });
+    const projSorted=Object.entries(projFunnel).sort((a,b)=>b[1].avg-a[1].avg);
+    h+=`<li><span class="si-title">项目间对比</span><span class="si-body">`;
+    projSorted.forEach(([proj,d])=>{
+      h+=`<span class="si-tag">${proj}</span>平均漏斗完成率 <strong class="num">${fmtPct(d.avg)}</strong>，最佳 <strong>${d.best?.[0].replace('功能漏斗','')||'-'}</strong>（${fmt(d.best?.[1]*100||0)}%）。`;
+    });
+    h+='</span></li>';
+  }
+
+  h+='</ul></div>';
+  return h;
 }
 
 function buildFunnelDetailFilters(){
   const dates=[...S.dates].sort();
-  let h=`<div class="local-filter"><span style="color:var(--muted)">漏斗模块:</span>`;
+  let h=`<div class="local-filter">`;
+  h+=`<div class="filter-group"><span class="filter-label">漏斗模块</span>`;
   FUNNELS.forEach(fn=>{h+=`<button class="metric-btn ${S.funnelMods.includes(fn)?'active':''}" data-fmod="${fn}">${fn.replace('功能漏斗','')}</button>`});
-  h+=`<span style="margin-left:12px;color:var(--muted)">日期:</span><button class="metric-btn ${S.funnelDate==='all'?'active':''}" data-fdate="all">全部</button>`;
+  h+=`</div>`;
+  h+=`<div class="filter-group"><span class="filter-label">日期</span><button class="metric-btn ${S.funnelDate==='all'?'active':''}" data-fdate="all">全部</button>`;
   dates.forEach(d=>{h+=`<button class="metric-btn ${S.funnelDate===d?'active':''}" data-fdate="${d}">${d.slice(5)}</button>`});
-  h+=`<span style="margin-left:12px;color:var(--muted)">PV/UV:</span><button class="metric-btn ${S.funnelPV.includes('uv')?'active':''}" data-fpv="uv">UV</button><button class="metric-btn ${S.funnelPV.includes('pv')?'active':''}" data-fpv="pv">PV</button>`;
+  h+=`</div>`;
+  h+=`<div class="filter-group"><span class="filter-label">指标</span><button class="metric-btn ${S.funnelPV.includes('uv')?'active':''}" data-fpv="uv">UV</button><button class="metric-btn ${S.funnelPV.includes('pv')?'active':''}" data-fpv="pv">PV</button></div>`;
   h+='</div>';return h;
 }
 
@@ -16191,15 +16308,14 @@ function renderTab3(){
   const p=document.getElementById('panel-3');
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));p.classList.add('active');
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
-  let html='<div class="section-title">M1: 筛选条件</div><div class="local-filter"><span style="color:var(--muted)">使用全局筛选条件分析通知模块表现</span></div>';
-  html+='<div class="section-title">M2: 通知总览矩阵</div>';
+  let html='<div class="section-title">M2: 通知总览矩阵</div>';
   html+=buildNotifOverview(sel);
   html+=buildNotifSummary();
   html+='<div class="section-title">M4: 通知文案分析</div>';
   html+=buildNotifCopyFilters();
   html+=buildNotifCopyTable(sel);
   html+='<div class="section-title">M5: 文案排行</div>';
-  html+=`<div class="local-filter"><span style="color:var(--muted)">项目:</span>${PROJECTS.map(pr=>`<button class="metric-btn ${S.notifRankProj.includes(pr)?'active':''}" data-nrankp="${pr}">${pr}</button>`).join('')}<span style="margin-left:12px;color:var(--muted)">日期:</span><button class="metric-btn ${S.notifDate==='all'?'active':''}" data-ndate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.notifDate===dt?'active':''}" data-ndate="${dt}">${dt.slice(5)}</button>`).join('')}</div>`;
+  html+=`<div class="local-filter"><div class="filter-group"><span class="filter-label">项目</span>${PROJECTS.map(pr=>`<button class="metric-btn ${S.notifRankProj.includes(pr)?'active':''}" data-nrankp="${pr}">${pr}</button>`).join('')}</div><div class="filter-group"><span class="filter-label">日期</span><button class="metric-btn ${S.notifDate==='all'?'active':''}" data-ndate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.notifDate===dt?'active':''}" data-ndate="${dt}">${dt.slice(5)}</button>`).join('')}</div></div>`;
   if(S.notifRankProj.length>1){
     S.notifRankProj.forEach(pr=>{
       html+=`<div class="sub-title">${pr} - 文案排行</div>`;
@@ -16230,8 +16346,11 @@ function buildNotifOverview(sel){
     {key:'notifPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}人均点击次数`,fmt:v=>fmt(v,2)},
     {key:'persistentClickRate',label:`${S.day==='d0'?'D0':'D1'}常住通知栏点击率`,fmt:v=>fmtPct(v)},
     {key:'persistentPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}常住通知栏人均点击次数`,fmt:v=>fmt(v,2)}];
-  let h='<div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>';
-  keys.forEach((k,i)=>{h+=`<th>${k}</th>`;if(i>0)h+=`<th>对比值</th>`});
+  let h='<div class="table-wrap"><table class="bi-table"><thead>';
+  h+=`<tr><th rowspan="2">指标</th>`;
+  keys.forEach((k,i)=>{const cls=i%2===1?'proj-group alt':'proj-group';h+=`<th class="${cls}">${k}</th>`;if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`});
+  h+='</tr><tr>';
+  keys.forEach((k,i)=>{h+=`<th class="sub-th">${i===0?'基准':''}</th>`;if(i>0)h+='<th class="sub-th">数值</th>'});
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
     h+='<tr><td>'+m.label+'</td>';
@@ -16260,15 +16379,18 @@ function buildNotifSummary(){
 function buildNotifCopyFilters(){
   const dates=[...S.dates].sort();
   return`<div class="local-filter">
-    <span style="color:var(--muted)">展示/点击:</span>
+    <div class="filter-group"><span class="filter-label">展示/点击</span>
     <button class="metric-btn ${S.notifSC==='show'?'active':''}" data-nsc="show">展示</button>
     <button class="metric-btn ${S.notifSC==='click'?'active':''}" data-nsc="click">点击</button>
-    <span style="margin-left:12px;color:var(--muted)">日期:</span>
+    </div>
+    <div class="filter-group"><span class="filter-label">日期</span>
     <button class="metric-btn ${S.notifDate==='all'?'active':''}" data-ndate="all">全部</button>
     ${dates.map(d=>`<button class="metric-btn ${S.notifDate===d?'active':''}" data-ndate="${d}">${d.slice(5)}</button>`).join('')}
-    <span style="margin-left:12px;color:var(--muted)">PV/UV:</span>
+    </div>
+    <div class="filter-group"><span class="filter-label">指标</span>
     <button class="metric-btn ${S.notifPV.includes('uv')?'active':''}" data-npv="uv">UV</button>
     <button class="metric-btn ${S.notifPV.includes('pv')?'active':''}" data-npv="pv">PV</button>
+    </div>
   </div>`;
 }
 
@@ -16283,16 +16405,17 @@ function buildNotifCopyTable(sel){
   let h='<div class="table-wrap"><table class="bi-table"><thead>';
   let r1='<tr><th rowspan="2">文案代号</th><th rowspan="2">文案内容</th>';
   keys.forEach((k,i)=>{
-    r1+=`<th colspan="${colCount}" style="text-align:center">${k}</th>`;
-    if(i>0)r1+=`<th colspan="${colCount}" style="text-align:center">对比值</th>`;
+    const cls=i%2===1?'proj-group alt':'proj-group';
+    r1+=`<th class="${cls}" colspan="${colCount}" style="text-align:center">${k}</th>`;
+    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:center">对比值</th>`;
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
-    if(pvuv.includes('pv'))r2+=isClick?'<th style="text-align:center">人均点击(PV)</th>':'<th style="text-align:center">人均展示(PV)</th>';
-    if(pvuv.includes('uv'))r2+=isClick?'<th style="text-align:center">点击率(UV)</th>':'<th style="text-align:center">展示率(UV)</th>';
+    if(pvuv.includes('pv'))r2+=isClick?'<th class="sub-th" style="text-align:center">人均点击(PV)</th>':'<th class="sub-th" style="text-align:center">人均展示(PV)</th>';
+    if(pvuv.includes('uv'))r2+=isClick?'<th class="sub-th" style="text-align:center">点击率(UV)</th>':'<th class="sub-th" style="text-align:center">展示率(UV)</th>';
     if(i>0){
-      if(pvuv.includes('pv'))r2+='<th style="text-align:center">PV对比</th>';
-      if(pvuv.includes('uv'))r2+='<th style="text-align:center">UV对比</th>';
+      if(pvuv.includes('pv'))r2+='<th class="sub-th" style="text-align:center">PV对比</th>';
+      if(pvuv.includes('uv'))r2+='<th class="sub-th" style="text-align:center">UV对比</th>';
     }
   });
   h+=r1+'</tr>'+r2+'</tr></thead><tbody>';
@@ -16370,11 +16493,10 @@ function renderTab4(){
   const p=document.getElementById('panel-4');
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));p.classList.add('active');
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
-  let html='<div class="section-title">M1: 筛选条件</div><div class="local-filter"><span style="color:var(--muted)">使用全局筛选条件分析功能模块表现</span></div>';
-  html+='<div class="section-title">M2: 功能洞察</div>';
+  let html='<div class="section-title">M2: 功能洞察</div>';
   html+=buildFeatureInsights(sel);
   html+='<div class="section-title">M3: 功能点击&使用总览</div>';
-  const featFilterHtml=`<div class="local-filter"><span style="color:var(--muted)">PV/UV:</span><button class="metric-btn ${S.featPV.includes('uv')?'active':''}" data-featpv="uv">UV</button><button class="metric-btn ${S.featPV.includes('pv')?'active':''}" data-featpv="pv">PV</button><span style="margin-left:12px;color:var(--muted)">日期:</span><button class="metric-btn ${S.featDate==='all'?'active':''}" data-featdate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.featDate===dt?'active':''}" data-featdate="${dt}">${dt.slice(5)}</button>`).join('')}</div>`;
+  const featFilterHtml=`<div class="local-filter"><div class="filter-group"><span class="filter-label">指标</span><button class="metric-btn ${S.featPV.includes('uv')?'active':''}" data-featpv="uv">UV</button><button class="metric-btn ${S.featPV.includes('pv')?'active':''}" data-featpv="pv">PV</button></div><div class="filter-group"><span class="filter-label">日期</span><button class="metric-btn ${S.featDate==='all'?'active':''}" data-featdate="all">全部</button>${[...S.dates].sort().map(dt=>`<button class="metric-btn ${S.featDate===dt?'active':''}" data-featdate="${dt}">${dt.slice(5)}</button>`).join('')}</div></div>`;
   html+=featFilterHtml;
   html+='<div class="sub-title">功能点击总览</div>';
   html+=buildFeatureClickTable(sel);
