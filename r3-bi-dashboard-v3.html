@@ -53,12 +53,15 @@ var Fr={},Gr={};var Wr,Hr=function(){function t(t,e,n){var i=this;this._sleepAft
 <style>
 :root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--ink:#f1f5f9;--muted:#94a3b8;--rule:#334155;--accent:#3b82f6;--accent2:#22c55e;--warn:#ef4444;--amber:#f59e0b}
 *{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
 body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
 .num{font-family:"SF Mono","Cascadia Code",Consolas,monospace}
 a{color:var(--accent);text-decoration:none}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg2);border-radius:4px}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+.table-wrap{scroll-behavior:smooth}
 .brand-bar{position:fixed;top:0;left:0;right:0;height:48px;background:var(--bg2);border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:100}
 .brand-title{font-size:18px;font-weight:700;color:var(--ink)}
 .brand-right{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
@@ -156,7 +159,7 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:a
 .bi-table .section-row td:first-child{background:#2a3a5a}
 .bi-table th.proj-group{background:var(--bg2);border-bottom:2px solid var(--accent);font-size:14px;color:var(--ink);text-align:center}
 .bi-table th.proj-group.alt{background:var(--bg3)}
-.bi-table th.cmp-group{background:#3a3f4a;border-bottom:2px solid var(--amber);color:var(--amber);text-align:center}
+.bi-table th.cmp-group{background:#3a3f4a;border-bottom:2px solid var(--amber);color:var(--amber);text-align:right}
 .bi-table th.sub-th{font-size:11px;font-weight:500;color:var(--muted);text-align:right}
 .cmp-up{color:var(--accent2)}.cmp-down{color:var(--warn)}
 .missing{color:var(--muted);font-style:italic}
@@ -15189,7 +15192,7 @@ function buildCmpTable(title,metrics,groups,keys,compareKey){
             const sign=diff>0?'+':'';
             h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
           }
-        }else{h+='<td><span class="missing">-</span></td>'}
+        }else{h+='<td class="num"><span class="missing">-</span></td>'}
       }
     });
     h+='</tr>';
@@ -15207,7 +15210,7 @@ function buildPVUVTableHeader(keys,label,pvuv){
   keys.forEach((k,i)=>{
     const cls=i%2===1?'proj-group alt':'proj-group';
     r1+=`<th class="${cls}" colspan="${colCount}" style="text-align:center">${k}</th>`;
-    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:center">对比值</th>`;
+    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:right">对比值</th>`;
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
@@ -15245,7 +15248,7 @@ function buildPVUVCompareCell(pv,uv,fpv,fuv,pvuv){
       const cls=d>=0?'cmp-up':'cmp-down';
       const sign=d>0?'+':'';
       h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
-    }else{h+=`<td><span class="missing">-</span></td>`}
+    }else{h+=`<td class="num"><span class="missing">-</span></td>`}
   }
   if(pvuv.includes('uv')){
     if(fuv!=null&&uv!=null){
@@ -15253,7 +15256,7 @@ function buildPVUVCompareCell(pv,uv,fpv,fuv,pvuv){
       const cls=d>=0?'cmp-up':'cmp-down';
       const sign=d>0?'+':'';
       h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
-    }else{h+=`<td><span class="missing">-</span></td>`}
+    }else{h+=`<td class="num"><span class="missing">-</span></td>`}
   }
   return h;
 }
@@ -16156,7 +16159,7 @@ function buildFunnelOverview(sel){
         let fv;
         if(m.key.startsWith('_metric_')){fv=groups[keys[0]]?.metrics?.[m.key.slice(8)]}else{fv=groups[keys[0]]?.[m.key]}
         if(m.isNum){const diff=(val||0)-(fv||0);h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${fmtInt(diff)}</td>`}
-        else{h+=`<td>${cmpCell(fv,val,m.lower)}</td>`}
+        else{h+=`<td class="num">${cmpCell(fv,val,m.lower)}</td>`}
       }
     });h+='</tr>';
   });
@@ -16378,7 +16381,7 @@ function buildNotifOverview(sel){
       if(i>0){
         const fv=groups[first]?.[m.key];const cv=val;
         if(m.isNum){const d=(cv||0)-(fv||0);h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}">${d>=0?'+':''}${fmtInt(d)}</td>`}
-        else{h+=`<td>${cmpCell(fv,cv,m.lower)}</td>`}
+        else{h+=`<td class="num">${cmpCell(fv,cv,m.lower)}</td>`}
       }
     });h+='</tr>';
   });
@@ -16425,7 +16428,7 @@ function buildNotifCopyTable(sel){
   keys.forEach((k,i)=>{
     const cls=i%2===1?'proj-group alt':'proj-group';
     r1+=`<th class="${cls}" colspan="${colCount}" style="text-align:center">${k}</th>`;
-    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:center">对比值</th>`;
+    if(i>0)r1+=`<th class="cmp-group" colspan="${colCount}" style="text-align:right">对比值</th>`;
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
