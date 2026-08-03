@@ -140,12 +140,14 @@ a{color:var(--accent);text-decoration:none}
 .metric-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .metric-btn:hover{border-color:var(--accent)}
 .table-wrap{overflow-x:auto;max-height:600px;overflow-y:auto;border-radius:8px;border:1px solid var(--rule);margin-bottom:16px}
-table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
+table.bi-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:auto}
 .bi-table thead{position:sticky;top:0;z-index:10}
-.bi-table th{background:var(--bg3);color:var(--muted);font-weight:600;padding:8px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--rule)}
+.bi-table th{background:var(--bg3);color:var(--muted);font-weight:600;padding:8px 14px;text-align:left;white-space:nowrap;border-bottom:2px solid var(--rule)}
 .bi-table th:first-child{position:sticky;left:0;z-index:12;min-width:160px}
-.bi-table td{padding:7px 12px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.bi-table th.num{text-align:right}
+.bi-table td{padding:7px 14px;border-bottom:1px solid var(--rule);white-space:nowrap}
 .bi-table td:first-child{position:sticky;left:0;background:var(--bg2);z-index:5;font-weight:500;min-width:160px}
+.bi-table td.num{text-align:right;font-variant-numeric:tabular-nums}
 .bi-table th.rank-col,.bi-table td.rank-col{min-width:50px;width:50px;text-align:center}
 .bi-table tr:hover td{background:rgba(59,130,246,.05)}
 .bi-table tr:hover td:first-child{background:var(--bg)}
@@ -153,9 +155,8 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
 .bi-table .section-row td:first-child{background:rgba(59,130,246,.2)}
 .bi-table th.proj-group{background:var(--bg2);border-bottom:2px solid var(--accent);font-size:14px;color:var(--ink);text-align:center}
 .bi-table th.proj-group.alt{background:var(--bg3)}
-.bi-table th.cmp-group{background:rgba(245,158,11,.12);border-bottom:2px solid var(--amber);color:var(--amber)}
-.bi-table th.sub-th{font-size:11px;font-weight:500;color:var(--muted)}
-.bi-table td.proj-divider{border-left:2px solid var(--rule)}
+.bi-table th.cmp-group{background:rgba(245,158,11,.12);border-bottom:2px solid var(--amber);color:var(--amber);text-align:center}
+.bi-table th.sub-th{font-size:11px;font-weight:500;color:var(--muted);text-align:right}
 .cmp-up{color:var(--accent2)}.cmp-down{color:var(--warn)}
 .missing{color:var(--muted);font-style:italic}
 .summary-box{background:var(--bg2);border-radius:8px;padding:20px 24px;margin:16px 0;font-size:14px;line-height:1.9}
@@ -190,12 +191,12 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
 .insight-card .ic-title{font-size:13px;color:var(--muted);margin-bottom:4px}
 .insight-card .ic-value{font-size:20px;font-weight:700}
 .insight-card .ic-desc{font-size:12px;color:var(--muted);margin-top:4px}
-.local-filter{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:13px;position:relative;z-index:10}
+.local-filter{display:block;margin-bottom:12px;padding:0;background:var(--bg);border-radius:8px;border:1px solid var(--rule);overflow:hidden}
 .local-filter .metric-btn{cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s}
 .local-filter .metric-btn:hover{opacity:.85;transform:translateY(-1px)}
-.filter-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 0}
-.filter-group+.filter-group{border-top:1px solid var(--rule);margin-top:4px;padding-top:10px}
-.filter-label{color:var(--muted);font-size:12px;font-weight:600;min-width:70px;flex-shrink:0}
+.filter-group{display:flex;flex-wrap:nowrap;gap:8px;align-items:center;padding:8px 14px;overflow-x:auto}
+.filter-group+.filter-group{border-top:1px solid var(--rule)}
+.filter-label{color:var(--muted);font-size:12px;font-weight:600;width:64px;flex-shrink:0;text-align:right}
 .notif-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px 0}
 .notif-map-item{background:var(--bg2);padding:8px 12px;border-radius:6px;font-size:12px}
 .notif-map-item .nm-code{color:var(--accent);font-weight:600}
@@ -15149,20 +15150,10 @@ function renderAll(){
 function buildCmpTable(title,metrics,groups,keys,compareKey){
   if(!keys||!Array.isArray(keys)||keys.length===0)return '';
   const first=keys[0];
-  let h=`<div style="font-size:15px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead>`;
-  /* Row 1: project group headers */
-  h+=`<tr><th rowspan="2">指标</th>`;
+  let h=`<div style="font-size:15px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>`;
   keys.forEach((k,i)=>{
-    const cls=i%2===1?'proj-group alt':'proj-group';
-    h+=`<th class="${cls}" colspan="${i>0?2:1}">${k}</th>`;
-    if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`;
-  });
-  h+='</tr>';
-  /* Row 2: sub headers */
-  h+='<tr>';
-  keys.forEach((k,i)=>{
-    h+=`<th class="sub-th">${i===0?'基准':''}</th>`;
-    if(i>0)h+='<th class="sub-th">数值</th>';
+    h+=`<th class="num proj-group ${i%2===1?'alt':''}">${k}</th>`;
+    if(i>0)h+=`<th class="num cmp-group">对比值</th>`;
   });
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
@@ -15208,11 +15199,11 @@ function buildPVUVTableHeader(keys,label,pvuv){
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
-    if(showPV)r2+='<th class="sub-th" style="text-align:center">PV</th>';
-    if(showUV)r2+='<th class="sub-th" style="text-align:center">UV</th>';
+    if(showPV)r2+='<th class="sub-th">PV</th>';
+    if(showUV)r2+='<th class="sub-th">UV</th>';
     if(i>0){
-      if(showPV)r2+='<th class="sub-th" style="text-align:center">PV对比</th>';
-      if(showUV)r2+='<th class="sub-th" style="text-align:center">UV对比</th>';
+      if(showPV)r2+='<th class="sub-th">PV对比</th>';
+      if(showUV)r2+='<th class="sub-th">UV对比</th>';
     }
   });
   return r1+'</tr>'+r2+'</tr>';
@@ -16114,11 +16105,8 @@ function buildFunnelOverview(sel){
   });
   const metrics=[{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true}];
   funnelMetrics.forEach(fm=>{metrics.push({key:'_metric_'+fm,label:fm,fmt:v=>v!=null?fmtPct(v):'-',lower:false})});
-  let h='<div class="table-wrap"><table class="bi-table"><thead>';
-  h+=`<tr><th rowspan="2">指标</th>`;
-  keys.forEach((k,i)=>{const cls=i%2===1?'proj-group alt':'proj-group';h+=`<th class="${cls}">${k}</th>`;if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`});
-  h+='</tr><tr>';
-  keys.forEach((k,i)=>{h+=`<th class="sub-th">${i===0?'基准':''}</th>`;if(i>0)h+='<th class="sub-th">数值</th>'});
+  let h='<div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>';
+  keys.forEach((k,i)=>{h+=`<th class="num proj-group ${i%2===1?'alt':''}">${k}</th>`;if(i>0)h+=`<th class="num cmp-group">对比值</th>`});
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
     h+='<tr><td>'+m.label+'</td>';
@@ -16346,11 +16334,8 @@ function buildNotifOverview(sel){
     {key:'notifPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}人均点击次数`,fmt:v=>fmt(v,2)},
     {key:'persistentClickRate',label:`${S.day==='d0'?'D0':'D1'}常住通知栏点击率`,fmt:v=>fmtPct(v)},
     {key:'persistentPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}常住通知栏人均点击次数`,fmt:v=>fmt(v,2)}];
-  let h='<div class="table-wrap"><table class="bi-table"><thead>';
-  h+=`<tr><th rowspan="2">指标</th>`;
-  keys.forEach((k,i)=>{const cls=i%2===1?'proj-group alt':'proj-group';h+=`<th class="${cls}">${k}</th>`;if(i>0)h+=`<th class="cmp-group" rowspan="2">对比值</th>`});
-  h+='</tr><tr>';
-  keys.forEach((k,i)=>{h+=`<th class="sub-th">${i===0?'基准':''}</th>`;if(i>0)h+='<th class="sub-th">数值</th>'});
+  let h='<div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>';
+  keys.forEach((k,i)=>{const cls=i%2===1?'proj-group alt':'proj-group';h+=`<th class="num ${cls}">${k}</th>`;if(i>0)h+=`<th class="num cmp-group">对比值</th>`});
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
     h+='<tr><td>'+m.label+'</td>';
@@ -16411,11 +16396,11 @@ function buildNotifCopyTable(sel){
   });
   let r2='<tr>';
   keys.forEach((k,i)=>{
-    if(pvuv.includes('pv'))r2+=isClick?'<th class="sub-th" style="text-align:center">人均点击(PV)</th>':'<th class="sub-th" style="text-align:center">人均展示(PV)</th>';
-    if(pvuv.includes('uv'))r2+=isClick?'<th class="sub-th" style="text-align:center">点击率(UV)</th>':'<th class="sub-th" style="text-align:center">展示率(UV)</th>';
+    if(pvuv.includes('pv'))r2+=isClick?'<th class="sub-th">人均点击(PV)</th>':'<th class="sub-th">人均展示(PV)</th>';
+    if(pvuv.includes('uv'))r2+=isClick?'<th class="sub-th">点击率(UV)</th>':'<th class="sub-th">展示率(UV)</th>';
     if(i>0){
-      if(pvuv.includes('pv'))r2+='<th class="sub-th" style="text-align:center">PV对比</th>';
-      if(pvuv.includes('uv'))r2+='<th class="sub-th" style="text-align:center">UV对比</th>';
+      if(pvuv.includes('pv'))r2+='<th class="sub-th">PV对比</th>';
+      if(pvuv.includes('uv'))r2+='<th class="sub-th">UV对比</th>';
     }
   });
   h+=r1+'</tr>'+r2+'</tr></thead><tbody>';
