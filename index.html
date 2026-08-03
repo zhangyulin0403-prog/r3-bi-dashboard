@@ -107,20 +107,30 @@ a{color:var(--accent);text-decoration:none}
 .tab-content{padding:36px 24px 40px}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
-.section-title{font-size:16px;font-weight:600;margin:28px 0 12px;color:var(--ink)}
+.section-title{font-size:18px;font-weight:700;padding:10px 0 6px;border-bottom:2px solid var(--accent);margin:28px 0 12px;color:var(--ink)}
 .section-title:first-child{margin-top:12px}
-.sub-title{font-size:14px;font-weight:500;margin:16px 0 8px;color:var(--muted)}
+.sub-title{font-size:15px;font-weight:600;margin:16px 0 8px;color:var(--muted)}
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
 @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.kpi-grid{grid-template-columns:1fr}}
-.kpi-card{background:var(--bg2);border-radius:8px;padding:16px 20px}
+.kpi-card{background:var(--bg2);border-radius:8px;padding:16px 20px;border:2px solid transparent;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.kpi-card:hover{border-color:var(--accent)}
+.kpi-card.active{border-color:var(--accent);box-shadow:0 4px 16px rgba(59,130,246,.25)}
+.m4-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}
+.m4-tab{background:var(--bg3);border:1px solid var(--rule);color:var(--muted);padding:10px 22px;border-radius:20px;cursor:pointer;font-size:15px;font-weight:600;transition:all .15s}
+.m4-tab:hover{border-color:var(--accent);color:var(--ink)}
+.m4-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 14px rgba(59,130,246,.3)}
+.m4-tab-panel{display:none}
+.m4-tab-panel.active{display:block}
 .kpi-card .kpi-label{font-size:13px;color:var(--muted);margin-bottom:8px}
 .kpi-card .kpi-value{font-size:28px;font-weight:700;color:var(--ink)}
 .kpi-card .kpi-items{margin-top:8px}
-.kpi-card .kpi-item{display:flex;justify-content:space-between;padding:3px 0;font-size:13px;border-bottom:1px solid var(--rule)}
+.kpi-card .kpi-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px;border-bottom:1px solid var(--rule)}
 .kpi-card .kpi-item:last-child{border-bottom:none}
 .kpi-card .kpi-item .kpi-proj{color:var(--muted)}
 .kpi-card .kpi-item .kpi-val{font-weight:600}
+.kpi-card .kpi-ver-header{font-size:11px;color:var(--accent);font-weight:700;margin-top:10px;padding-bottom:3px;border-bottom:1px dashed var(--accent);text-transform:uppercase;letter-spacing:.5px}
+.kpi-card .kpi-item .kpi-ver-tag{display:inline-block;background:var(--bg3);color:var(--accent);padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;margin-right:6px;border:1px solid var(--accent)}
 .kpi-card .kpi-sub{font-size:12px;color:var(--muted);margin-top:6px}
 .chart-box{background:var(--bg2);border-radius:8px;padding:16px;margin-bottom:20px}
 .chart-box h4{font-size:14px;font-weight:500;margin-bottom:8px}
@@ -247,8 +257,9 @@ const NOTIF_MAP={"内存清理推送":{label:"a1",desc:"Memory X% full! Clear no
 /* ============ STATE ============ */
 const TABS=['数据概览','买量国家分析','漏斗分析','通知模块','功能模块'];
 const S={mode:'single',projects:['R319'],countries:[...COUNTRIES],dates:[...DATES],versions:[...VERSIONS],dim:['avg'],tab:0,
+  versionUserSet:false,day:'d0',
   m2Proj:'R319',m2Metric:'newUsers',
-    m4d41:['all'],m4d43:['all'],m4d45:['all'],
+    m4Tab:0,m4d41:['all'],m4d43:['all'],m4d45:['all'],
   funnelMods:[...FUNNELS],funnelDate:'all',funnelPV:['pv','uv'],
   notifSC:'show',notifDate:'all',notifPV:['pv','uv'],notifRankProj:[...PROJECTS],
   featPV:['pv','uv'],featDate:'all'};
@@ -305,6 +316,7 @@ function buildFilterBar(){
     <div class="filter-group"><label>国家</label><div class="ms-wrap" id="ms-countries"></div></div>
     <div class="filter-group"><label>日期</label><div class="ms-wrap" id="ms-dates"></div></div>
     <div class="filter-group"><label>版本号</label><div class="ms-wrap" id="ms-versions"></div></div>
+    <div class="filter-group"><label>Day</label><div class="ms-wrap" id="ms-day"></div></div>
     <div class="filter-group"><label>展示维度</label><div class="ms-wrap" id="ms-dim"></div></div>
   </div>`;
   if(S.mode==='single'){
@@ -324,13 +336,13 @@ function buildFilterBar(){
   const top10Countries=Object.entries(countryTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(e=>e[0]);
   // Smart version filter: only versions available for selected projects
   const availVersions=[...new Set(projData.map(r=>r.version))].sort().reverse();
-  // In single project mode, default select latest 2 versions if not already set
-  if(S.mode==='single'&&availVersions.length>=2){
+  // In single project mode, default select latest 2 versions only on first load or mode switch
+  if(S.mode==='single'&&availVersions.length>=2&&!S.versionUserSet){
     const currentValid=S.versions.filter(v=>availVersions.includes(v));
     if(currentValid.length!==2||!availVersions.slice(0,2).every(v=>currentValid.includes(v))){
       S.versions=availVersions.slice(0,2);
     }
-  }else if(S.mode==='compare'){
+  }else if(S.mode==='compare'&&!S.versionUserSet){
     // Multi-project mode: default select all available versions
     if(S.versions.length!==availVersions.length||!availVersions.every(v=>S.versions.includes(v))){
       S.versions=[...availVersions];
@@ -339,9 +351,16 @@ function buildFilterBar(){
   buildMS('ms-countries','countries',COUNTRIES);
   buildMS('ms-dates','dates',DATES);
   buildMS('ms-versions','versions',availVersions.length>0?availVersions:VERSIONS);
+  // Day0/Day1 filter as radio buttons
+  const dw=document.getElementById('ms-day');
+  dw.innerHTML=`<div class="ms-trigger"><span>${S.day==='d0'?'Day 0':'Day 1'}</span><span class="ms-arrow">&#9660;</span></div>
+  <div class="ms-dropdown"><div class="ms-option"><label><input type="radio" name="day-radio" value="d0" ${S.day==='d0'?'checked':''}> Day 0</label></div><div class="ms-option"><label><input type="radio" name="day-radio" value="d1" ${S.day==='d1'?'checked':''}> Day 1</label></div></div>`;
+  const dt=dw.querySelector('.ms-trigger'),dd=dw.querySelector('.ms-dropdown');
+  dt.onclick=(e)=>{e.stopPropagation();document.querySelectorAll('.ms-dropdown.open').forEach(d=>{if(d!==dd)d.classList.remove('open')});dd.classList.toggle('open')};
+  dd.querySelectorAll('input[type=radio]').forEach(r=>r.onchange=()=>{S.day=r.value;renderAll()});
   buildMS('ms-dim','dim',['首日访问日期','平均值'],{defaults:['平均值']});
-  bar.querySelectorAll('.mode-switch button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;if(S.mode==='single'&&S.projects.length>1){S.projects=[S.projects[0]]}renderAll()});
-  document.getElementById('btnCancelAll').onclick=()=>{S.projects=[...PROJECTS];S.mode='compare';S.countries=[...COUNTRIES];S.dates=[...DATES];S.versions=[...new Set(commonData.map(r=>r.version))].sort().reverse();S.dim=['平均值'];renderAll()};
+  bar.querySelectorAll('.mode-switch button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;S.versionUserSet=false;if(S.mode==='single'&&S.projects.length>1){S.projects=[S.projects[0]]}renderAll()});
+  document.getElementById('btnCancelAll').onclick=()=>{S.projects=[...PROJECTS];S.mode='compare';S.versionUserSet=false;S.countries=[...COUNTRIES];S.dates=[...DATES];S.versions=[...new Set(commonData.map(r=>r.version))].sort().reverse();S.day='d0';S.dim=['平均值'];renderAll()};
 }
 function buildMS(id,key,opts,extra){
   const defaults=extra?.defaults||opts;
@@ -378,10 +397,10 @@ function buildMS(id,key,opts,extra){
     optCbs.forEach(cb=>{cb.checked=s.includes(cb.dataset.val)});
   };
   trig.onclick=(e)=>{e.stopPropagation();document.querySelectorAll('.ms-dropdown.open').forEach(d=>{if(d!==dd){d.classList.remove('open');if(d._pendingRender)renderAll()}});dd.classList.toggle('open')};
-  dd.addEventListener('change',e=>{if(e.target.dataset.mskey!==key)return;const v=e.target.dataset.val;if(v==='__all'){if(e.target.checked){S[key]=[...opts]}else{S[key]=[]};syncOptCbs()}else if(e.target.checked){if(!S[key].includes(v))S[key].push(v)}else{S[key]=S[key].filter(x=>x!==v)}if(key==='projects'){S.mode=S.projects.length>1?'compare':'single'}updateTriggerText();syncAllCb();dd._pendingRender=true});
+  dd.addEventListener('change',e=>{if(e.target.dataset.mskey!==key)return;const v=e.target.dataset.val;if(v==='__all'){if(e.target.checked){S[key]=[...opts]}else{S[key]=[]};syncOptCbs()}else if(e.target.checked){if(!S[key].includes(v))S[key].push(v)}else{S[key]=S[key].filter(x=>x!==v)}if(key==='projects'){S.mode=S.projects.length>1?'compare':'single';S.versionUserSet=false}if(key==='versions'){S.versionUserSet=true}updateTriggerText();syncAllCb();dd._pendingRender=true});
   dd.addEventListener('click',e=>e.stopPropagation());
-  wrap.querySelector('.btn-clear-all').onclick=(e)=>{e.stopPropagation();S[key]=[];if(key==='projects')S.mode='single';updateTriggerText();syncAllCb();syncOptCbs();dd._pendingRender=true};
-  wrap.querySelector('.btn-invert').onclick=(e)=>{e.stopPropagation();S[key]=opts.filter(o=>!S[key].includes(o));if(key==='projects')S.mode=S.projects.length>1?'compare':'single';updateTriggerText();syncAllCb();syncOptCbs();dd._pendingRender=true};
+  wrap.querySelector('.btn-clear-all').onclick=(e)=>{e.stopPropagation();S[key]=[];if(key==='projects'){S.mode='single';S.versionUserSet=false}if(key==='versions')S.versionUserSet=true;updateTriggerText();syncAllCb();syncOptCbs();dd._pendingRender=true};
+  wrap.querySelector('.btn-invert').onclick=(e)=>{e.stopPropagation();S[key]=opts.filter(o=>!S[key].includes(o));if(key==='projects'){S.mode=S.projects.length>1?'compare':'single';S.versionUserSet=false}if(key==='versions')S.versionUserSet=true;updateTriggerText();syncAllCb();syncOptCbs();dd._pendingRender=true};
 }
 function hasFilter(){return S.projects.length!==PROJECTS.length||S.countries.length!==COUNTRIES.length||S.dates.length!==DATES.length||S.versions.length!==VERSIONS.length||S.dim.length!==1}
 document.addEventListener('click',()=>{document.querySelectorAll('.ms-dropdown.open').forEach(d=>{d.classList.remove('open');if(d._pendingRender){d._pendingRender=false;renderAll()}})});
@@ -404,7 +423,7 @@ function renderAll(){
 function buildCmpTable(title,metrics,groups,keys,compareKey){
   if(!keys||!Array.isArray(keys)||keys.length===0)return '';
   const first=keys[0];
-  let h=`<div style="font-size:13px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>`;
+  let h=`<div style="font-size:15px;font-weight:600;margin:8px 0 4px;color:var(--muted)">${title}</div><div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>`;
   keys.forEach(k=>{h+=`<th>${k}</th>`;if(k!==first)h+=`<th>对比值</th>`});
   h+='</tr></thead><tbody>';
   metrics.forEach(m=>{
@@ -417,11 +436,8 @@ function buildCmpTable(title,metrics,groups,keys,compareKey){
         const fv=groups[first]?.[m.key];const cv=groups[k]?.[m.key];
         if(fv!=null&&cv!=null){
           if(m.isNum){
-            const diff=cv-fv;
-            const absPct=fv?Math.abs(diff/fv)*100:0;
-            const cls=diff>=0?'cmp-up':'cmp-down';
-            const sign=diff>0?'+':'';
-            h+=`<td class="num ${cls}">${sign}${absPct.toFixed(2)}%</td>`;
+            const diff=(cv||0)-(fv||0);
+            h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${fmtInt(diff)}</td>`;
           }else{
             // Unified percentage format for comparison values
             const diff=cv-fv;
@@ -470,7 +486,7 @@ function buildPVUVNewUsersRow(keys,groups,pvuv){
   keys.forEach((k,i)=>{
     const nu=sum(groups[k].rows.map(r=>r.newUsers));
     h+=`<td class="num" colspan="${colCount}">${fmtInt(nu)}</td>`;
-    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;const absPct=fnu?Math.abs(d/fnu)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
+    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${fmtInt(d)}</td>`}
   });
   h+='</tr>';
   return h;
@@ -510,51 +526,67 @@ function renderTab0(){
   const totalNU=sum(fData.map(r=>r.newUsers));
   const d1r=wavg(fData.map(r=>r.d1Retention),fData.map(r=>r.newUsers));
   const homeRows=filterFeature(sel(),{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});
-  const homeArr=wavg(homeRows.map(r=>r.d0),homeRows.map(r=>r.newUsers));
+  const homeArr=wavg(homeRows.map(r=>r[S.day]),homeRows.map(r=>r.newUsers));
   const featRows=filterFeature(sel(),{type:'首页模块点击率'});
-  const featClicks={};featRows.forEach(r=>{if(!featClicks[r.analysisObject])featClicks[r.analysisObject]=[];featClicks[r.analysisObject].push({v:r.d0,w:r.newUsers})});
+  const featClicks={};featRows.forEach(r=>{if(!featClicks[r.analysisObject])featClicks[r.analysisObject]=[];featClicks[r.analysisObject].push({v:r[S.day],w:r.newUsers})});
   const featAvg=avg(Object.values(featClicks).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))));
   const perProj={};
   PROJECTS.forEach(proj=>{if(!S.projects.includes(proj))return;
     const fd=filterCommon({...sel(),projects:[proj]});
     perProj[proj]={nu:sum(fd.map(r=>r.newUsers)),d1:wavg(fd.map(r=>r.d1Retention),fd.map(r=>r.newUsers))};
     const hr=filterFeature({...sel(),projects:[proj]},{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});
-    perProj[proj].home=wavg(hr.map(r=>r.d0),hr.map(r=>r.newUsers));
+    perProj[proj].home=wavg(hr.map(r=>r[S.day]),hr.map(r=>r.newUsers));
     const fr=filterFeature({...sel(),projects:[proj]},{type:'首页模块点击率'});
-    const fc={};fr.forEach(r=>{if(!fc[r.analysisObject])fc[r.analysisObject]=[];fc[r.analysisObject].push({v:r.d0,w:r.newUsers})});
+    const fc={};fr.forEach(r=>{if(!fc[r.analysisObject])fc[r.analysisObject]=[];fc[r.analysisObject].push({v:r[S.day],w:r.newUsers})});
     perProj[proj].feat=avg(Object.values(fc).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))));
   });
+  // Per-version aggregation for single-project mode
+  const perVer={};
+  if(S.mode==='single'){
+    S.versions.forEach(v=>{
+      const vd=filterCommon({...sel(),versions:[v]});
+      perVer[v]={nu:sum(vd.map(r=>r.newUsers)),d1:wavg(vd.map(r=>r.d1Retention),vd.map(r=>r.newUsers))};
+      const vhr=filterFeature({...sel(),versions:[v]},{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});
+      perVer[v].home=wavg(vhr.map(r=>r[S.day]),vhr.map(r=>r.newUsers));
+      const vfr=filterFeature({...sel(),versions:[v]},{type:'首页模块点击率'});
+      const vfc={};vfr.forEach(r=>{if(!vfc[r.analysisObject])vfc[r.analysisObject]=[];vfc[r.analysisObject].push({v:r[S.day],w:r.newUsers})});
+      perVer[v].feat=avg(Object.values(vfc).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))));
+    });
+  }
   let kpiHtml='<div class="kpi-grid">';
   const kpis=[
-    {label:'新增用户数',total:fmtInt(totalNU),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtInt(v.nu)])),sub:'所选日期新增用户总数'},
-    {label:'D1留存率',total:fmtPct(d1r),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.d1)])),sub:'所选日期加权平均'},
-    {label:'首页到达率',total:fmtPct(homeArr),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.home)])),sub:'新用户到达首页转化率'},
-    {label:'功能点击率',total:fmtPct(featAvg),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.feat)])),sub:'所有功能平均点击率'}
+    {label:'新增用户数',m2m:'newUsers',total:fmtInt(totalNU),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtInt(v.nu)])),sub:'所选日期新增用户总数'},
+    {label:'D1留存率',m2m:'d1Retention',total:fmtPct(d1r),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.d1)])),sub:'所选日期加权平均'},
+    {label:'首页到达率',m2m:'homeArr',total:fmtPct(homeArr),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.home)])),sub:'新用户到达首页转化率'},
+    {label:'功能点击率',m2m:'featClick',total:fmtPct(featAvg),vals:Object.fromEntries(Object.entries(perProj).map(([k,v])=>[k,fmtPct(v.feat)])),sub:'所有功能平均点击率'}
   ];
   kpis.forEach(kpi=>{
-    const items=S.projects.length>1?Object.entries(kpi.vals).map(([pr,v])=>`<div class="kpi-item"><span class="kpi-proj num">${pr}</span><span class="kpi-val num">${v}</span></div>`).join(''):'';
-    kpiHtml+=`<div class="kpi-card"><div class="kpi-label">${kpi.label}</div><div class="kpi-value num">${kpi.total}</div><div class="kpi-items">${items}</div><div class="kpi-sub">${kpi.sub}</div></div>`;
+    let items='';
+    if(S.mode==='single'){
+      // Single-project: show per-version breakdown with clear labels
+      const vKey=kpi.m2m==='newUsers'?'nu':kpi.m2m==='d1Retention'?'d1':kpi.m2m==='homeArr'?'home':'feat';
+      items=`<div class="kpi-ver-header">分版本明细（${S.projects[0]}）</div>`;
+      items+=Object.entries(perVer).map(([v,val])=>{
+        const valStr=kpi.m2m==='newUsers'?fmtInt(val[vKey]):fmtPct(val[vKey]);
+        return `<div class="kpi-item"><span><span class="kpi-ver-tag">版本 ${v}</span></span><span class="kpi-val num">${valStr}</span></div>`;
+      }).join('');
+    }else if(S.projects.length>1){
+      items=Object.entries(kpi.vals).map(([pr,v])=>`<div class="kpi-item"><span class="kpi-proj num">${pr}</span><span class="kpi-val num">${v}</span></div>`).join('');
+    }
+    kpiHtml+=`<div class="kpi-card ${S.m2Metric===kpi.m2m?'active':''}" data-m2m="${kpi.m2m}"><div class="kpi-label">${kpi.label}</div><div class="kpi-value num">${kpi.total}</div><div class="kpi-items">${items}</div><div class="kpi-sub">${kpi.sub}</div></div>`;
   });
   kpiHtml+='</div>';
   p.insertAdjacentHTML('beforeend',kpiHtml);
 
-  // M2: Multi-metric trend chart (single-select with auto-scaling Y-axis)
+  // M2: Trend chart driven by KPI card selection
   const m2Names={newUsers:'新增用户',d1Retention:'D1留存',homeArr:'首页到达',featClick:'功能点击'};
   const m2Colors={newUsers:'#3b82f6',d1Retention:'#10b981',homeArr:'#f59e0b',featClick:'#ec4899'};
   const m2ProjColors={'R319':'#3b82f6','R319B':'#22c55e'};
+  const m2VerColors=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16'];
   const m2PctMetrics=['d1Retention','homeArr','featClick'];
-  const isMultiProjM2=S.projects.length>1;
-  let m2html=`<div class="section-title">M2: 多指标趋势</div>
-  <div class="local-filter">
-    ${isMultiProjM2?`<span style="color:var(--muted)">项目: <strong>${S.projects.join(', ')}</strong></span>`:`<span style="color:var(--muted)">项目:</span> ${PROJECTS.map(pr=>`<button class="metric-btn ${S.m2Proj===pr?'active':''}" data-m2p="${pr}">${pr}</button>`).join('')}`}
-    <span style="margin-left:12px;color:var(--muted)">指标:</span>
-    ${['newUsers','d1Retention','homeArr','featClick'].map(m=>`<button class="metric-btn ${S.m2Metric===m?'active':''}" data-m2m="${m}">${m2Names[m]}</button>`).join('')}
-  </div>
-  <div class="chart-box"><div class="chart-container" id="chart-m2"></div></div>`;
+  const m2Desc=S.mode==='single'?`项目 ${S.projects[0]} ｜ 展示版本：${S.versions.join('、')}（每条折线对应一个版本）`:`多项目对比 ｜ 展示项目：${S.projects.join('、')}（每条折线对应一个项目）`;
+  let m2html=`<div class="sub-title" style="margin-top:18px">趋势图：${m2Names[S.m2Metric]}（${m2Desc}，点击上方卡片切换指标）</div><div class="chart-box"><div class="chart-container" id="chart-m2"></div></div>`;
   p.insertAdjacentHTML('beforeend',m2html);
-  if(!isMultiProjM2){
-    p.querySelectorAll('[data-m2p]').forEach(b=>b.onclick=()=>{S.m2Proj=b.dataset.m2p;renderTab0()});
-  }
   p.querySelectorAll('[data-m2m]').forEach(b=>b.onclick=()=>{
     S.m2Metric=b.dataset.m2m;
     renderTab0();
@@ -563,16 +595,31 @@ function renderTab0(){
     const chart=initChart('chart-m2');if(!chart)return;
     const dates=[...S.dates].sort();
     const isPct=m2PctMetrics.includes(S.m2Metric);
-    const projectsToShow=isMultiProjM2?S.projects:[S.m2Proj];
-    const series=projectsToShow.map(pr=>{
-      const m2Sel={projects:[pr],countries:S.countries,dates:S.dates,versions:S.versions};
-      let data;
-      if(S.m2Metric==='newUsers'){data=dates.map(dt=>sum(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers)));}
-      else if(S.m2Metric==='d1Retention'){data=dates.map(dt=>wavg(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.d1Retention),filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers))*100);}
-      else if(S.m2Metric==='homeArr'){data=dates.map(dt=>{const hr=filterFeature({...m2Sel,dates:[dt]},{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});return wavg(hr.map(r=>r.d0),hr.map(r=>r.newUsers))*100;});}
-      else if(S.m2Metric==='featClick'){data=dates.map(dt=>{const fr=filterFeature({...m2Sel,dates:[dt]},{type:'首页模块点击率'});const fc={};fr.forEach(r=>{if(!fc[r.analysisObject])fc[r.analysisObject]=[];fc[r.analysisObject].push({v:r.d0,w:r.newUsers})});return avg(Object.values(fc).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))))*100;});}
-      return {name:pr+' '+m2Names[S.m2Metric],type:'line',smooth:true,data:data,itemStyle:{color:m2ProjColors[pr]||m2Colors[S.m2Metric]},lineStyle:{width:2}};
-    });
+    let series;
+    if(S.mode==='single'){
+      // Single-project: one line per version
+      const proj=S.projects[0];
+      series=S.versions.map((v,vi)=>{
+        const m2Sel={projects:[proj],countries:S.countries,dates:S.dates,versions:[v]};
+        let data;
+        if(S.m2Metric==='newUsers'){data=dates.map(dt=>sum(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers)));}
+        else if(S.m2Metric==='d1Retention'){data=dates.map(dt=>wavg(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.d1Retention),filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers))*100);}
+        else if(S.m2Metric==='homeArr'){data=dates.map(dt=>{const hr=filterFeature({...m2Sel,dates:[dt]},{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});return wavg(hr.map(r=>r[S.day]),hr.map(r=>r.newUsers))*100;});}
+        else if(S.m2Metric==='featClick'){data=dates.map(dt=>{const fr=filterFeature({...m2Sel,dates:[dt]},{type:'首页模块点击率'});const fc={};fr.forEach(r=>{if(!fc[r.analysisObject])fc[r.analysisObject]=[];fc[r.analysisObject].push({v:r[S.day],w:r.newUsers})});return avg(Object.values(fc).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))))*100;});}
+        return {name:`版本 ${v}`,type:'line',smooth:true,data:data,itemStyle:{color:m2VerColors[vi%m2VerColors.length]},lineStyle:{width:2},symbol:'circle',symbolSize:6};
+      });
+    }else{
+      // Multi-project: one line per project
+      series=S.projects.map((pr,pi)=>{
+        const m2Sel={projects:[pr],countries:S.countries,dates:S.dates,versions:S.versions};
+        let data;
+        if(S.m2Metric==='newUsers'){data=dates.map(dt=>sum(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers)));}
+        else if(S.m2Metric==='d1Retention'){data=dates.map(dt=>wavg(filterCommon({...m2Sel,dates:[dt]}).map(r=>r.d1Retention),filterCommon({...m2Sel,dates:[dt]}).map(r=>r.newUsers))*100);}
+        else if(S.m2Metric==='homeArr'){data=dates.map(dt=>{const hr=filterFeature({...m2Sel,dates:[dt]},{type:'首次启动流程漏斗',obj:'新用户首次首页曝光'});return wavg(hr.map(r=>r[S.day]),hr.map(r=>r.newUsers))*100;});}
+        else if(S.m2Metric==='featClick'){data=dates.map(dt=>{const fr=filterFeature({...m2Sel,dates:[dt]},{type:'首页模块点击率'});const fc={};fr.forEach(r=>{if(!fc[r.analysisObject])fc[r.analysisObject]=[];fc[r.analysisObject].push({v:r[S.day],w:r.newUsers})});return avg(Object.values(fc).map(arr=>wavg(arr.map(a=>a.v),arr.map(a=>a.w))))*100;});}
+        return {name:`项目 ${pr}`,type:'line',smooth:true,data:data,itemStyle:{color:m2ProjColors[pr]||m2Colors[S.m2Metric]},lineStyle:{width:2},symbol:'circle',symbolSize:6};
+      });
+    }
     chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>isPct?v.toFixed(1)+'%':fmtInt(v)},
       grid:{left:60,right:20,top:40,bottom:40},xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}},splitLine:{show:false}},
       yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:isPct?'{value}%':''},axisLine:{lineStyle:{color:'#334155'}},splitLine:{lineStyle:{color:'#1e293b'}}},
@@ -589,9 +636,20 @@ function renderTab0(){
     const maxN=Math.max(...vals),minN=Math.min(...vals);
     return minN>0?((maxN-minN)/minN*100):0;
   })():0;
+  const verGapInfo=S.mode==='single'&&S.versions.length>1?(()=>{
+    const entries=Object.entries(perVer);
+    if(entries.length<2)return'';
+    const vals=entries.map(([k,v])=>v.nu);
+    const maxEntry=entries.reduce((a,b)=>b[1].nu>a[1].nu?b:a);
+    const minEntry=entries.reduce((a,b)=>b[1].nu<a[1].nu?b:a);
+    const gap=minEntry[1].nu>0?((maxEntry[1].nu-minEntry[1].nu)/minEntry[1].nu*100):0;
+    const d1Vals=entries.map(([k,v])=>v.d1);
+    const maxD1Ver=entries.reduce((a,b)=>b[1].d1>a[1].d1?b:a);
+    return`，版本间新用户差距 <strong class="num">${gap.toFixed(0)}%</strong>，<strong>版本 ${maxD1Ver[0]}</strong> 的D1留存率最高(${fmtPct(maxD1Ver[1].d1)})`;
+  })():'';
   p.insertAdjacentHTML('beforeend',`<div class="section-title">M3: 数据概况总结</div><div class="summary-box"><ul>
   <li><strong>核心风险:</strong>${d1Risk}。${homeRisk}。${featRisk}。</li>
-  <li><strong>用户规模:</strong>所选日期范围内共 <strong class="num">${fmtInt(totalNU)}</strong> 新增用户${S.projects.length>1?`，项目间差距 <strong class="num">${projGap.toFixed(0)}%</strong>，需关注低量项目的获客渠道质量`:''}。</li>
+  <li><strong>用户规模:</strong>所选日期范围内共 <strong class="num">${fmtInt(totalNU)}</strong> 新增用户${S.projects.length>1?`，项目间差距 <strong class="num">${projGap.toFixed(0)}%</strong>，需关注低量项目的获客渠道质量`:''}${verGapInfo}。</li>
   <li><strong>转化瓶颈:</strong>首页到达率 <strong class="num">${fmtPct(homeArr)}</strong> → 功能点击率 <strong class="num">${fmtPct(featAvg)}</strong>，从到达首页到点击功能的转化流失约 <strong class="num">${fmtPct(homeArr>0?(homeArr-featAvg)/homeArr:0)}</strong>，建议优先优化功能入口的视觉层级和点击引导。</li>
   <li><strong>警惕事项:</strong>D1留存率 <strong class="num">${fmtPct(d1r)}</strong>${d1r<0.25?'，低于行业基准线(25%)，存在用户大规模流失风险':'，达标但需持续监控'}；功能点击率 <strong class="num">${fmtPct(featAvg)}</strong>${featAvg<0.1?'，远低于健康阈值(10%)，可能导致用户感知不到核心功能价值':'，接近健康阈值'}。</li>
   <li><strong>行动建议:</strong>${d1r<0.25?'1) 立即排查新用户Onboarding流程，确保首日核心功能触达；':''}${homeArr<0.4?'2) 优化App启动速度，减少首屏白屏时间；':''}${featAvg<0.1?'3) 重新设计首页功能卡片，提升视觉吸引力；':''}4) 建立D1留存<25%的自动告警机制。</li>
@@ -606,7 +664,7 @@ function aggByCol(rows,colKey){
   Object.values(groups).forEach(g=>{
     g.newUsers=sum(g.rows.map(r=>r.newUsers));
     g.d1Retention=wavg(g.rows.map(r=>r.d1Retention),g.rows.map(r=>r.newUsers));
-    g.d0Uninstall=wavg(g.rows.map(r=>r.uninstallRate.d0),g.rows.map(r=>r.newUsers));
+    g.d0Uninstall=wavg(g.rows.map(r=>r.uninstallRate[S.day]),g.rows.map(r=>r.newUsers));
     const hrs=[];g.rows.forEach(r=>{hrs.push({rate:calcHomeArr(r),w:r.newUsers})});
     g.homeArrival=wavg(hrs.map(h=>h.rate),hrs.map(h=>h.w));
     const frs=g.rows.flatMap(r=>getModuleClicks(r));
@@ -620,13 +678,13 @@ function aggNotif(rows){
   const groups={};rows.forEach(r=>{const k=getCompareValues(r);if(!groups[k])groups[k]={rows:[]};groups[k].rows.push(r)});
   Object.values(groups).forEach(g=>{
     g.newUsers=sum(g.rows.map(r=>r.newUsers));
-    g.notifAuthRate=wavg(g.rows.map(r=>r.notifAuthRate.d0),g.rows.map(r=>r.newUsers));
-    g.notifShowRate=wavg(g.rows.map(r=>r.notifShowRate.d0),g.rows.map(r=>r.newUsers));
-    g.notifPerCapita=wavg(g.rows.map(r=>r.notifPerCapita.d0),g.rows.map(r=>r.newUsers));
-    g.notifClickRate=wavg(g.rows.map(r=>r.notifClickRate.d0),g.rows.map(r=>r.newUsers));
-    g.notifPerCapitaClick=wavg(g.rows.map(r=>r.notifPerCapitaClick.d0),g.rows.map(r=>r.newUsers));
-    g.persistentClickRate=wavg(g.rows.map(r=>r.persistentClickRate.d0),g.rows.map(r=>r.newUsers));
-    g.persistentPerCapitaClick=wavg(g.rows.map(r=>r.persistentPerCapitaClick.d0),g.rows.map(r=>r.newUsers));
+    g.notifAuthRate=wavg(g.rows.map(r=>r.notifAuthRate[S.day]),g.rows.map(r=>r.newUsers));
+    g.notifShowRate=wavg(g.rows.map(r=>r.notifShowRate[S.day]),g.rows.map(r=>r.newUsers));
+    g.notifPerCapita=wavg(g.rows.map(r=>r.notifPerCapita[S.day]),g.rows.map(r=>r.newUsers));
+    g.notifClickRate=wavg(g.rows.map(r=>r.notifClickRate[S.day]),g.rows.map(r=>r.newUsers));
+    g.notifPerCapitaClick=wavg(g.rows.map(r=>r.notifPerCapitaClick[S.day]),g.rows.map(r=>r.newUsers));
+    g.persistentClickRate=wavg(g.rows.map(r=>r.persistentClickRate[S.day]),g.rows.map(r=>r.newUsers));
+    g.persistentPerCapitaClick=wavg(g.rows.map(r=>r.persistentPerCapitaClick[S.day]),g.rows.map(r=>r.newUsers));
   });
   return groups;
 }
@@ -634,20 +692,24 @@ function aggNotif(rows){
 function calcHomeArr(commonRow){
   const rows=featureData.filter(r=>r.date===commonRow.date&&r.project===commonRow.project&&r.country===commonRow.country&&r.version===commonRow.version&&r.analysisType==='首次启动流程漏斗'&&r.analysisObject==='新用户首次首页曝光');
   if(rows.length===0)return null;
-  return wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers));
+  return wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
 }
 function getModuleClicks(commonRow){
   const rows=featureData.filter(r=>r.date===commonRow.date&&r.project===commonRow.project&&r.country===commonRow.country&&r.version===commonRow.version&&r.analysisType==='首页模块点击率');
-  return rows.map(r=>({name:r.analysisObject,rate:r.d0,w:r.newUsers}));
+  return rows.map(r=>({name:r.analysisObject,rate:r[S.day],w:r.newUsers}));
 }
 
 function renderM4(parent){
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
   const dates=[...S.dates].sort();
   const compareKey=getCompareKey();
+  const fmtKey=k=>S.mode==='single'?`版本 ${k}`:k;
 
   // Collect all M4 HTML, then append once
-  let html=`<div class="section-title">M4: 独立日期对比</div>`;
+  const m4Tabs=['概况表','国家买量趋势','通知模块','功能模块'];
+  let html=`<div class="section-title">M4: 独立日期对比</div><div class="m4-tabs">`;
+  m4Tabs.forEach((t,i)=>{html+=`<button class="m4-tab ${S.m4Tab===i?'active':''}" data-m4tab="${i}">${t}</button>`});
+  html+=`</div><div class="m4-tab-panel ${S.m4Tab===0?'active':''}">`;
 
   // Sub 4.1: Overview table with independent date filter
   const hasAll41=S.m4d41.includes('all');
@@ -666,9 +728,9 @@ function renderM4(parent){
       html+=buildCmpTable(S.mode==='single'?S.projects[0]+' - 均值总表':'多项目对比 - 均值总表',
         [{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true},
          {key:'d1Retention',label:'D1留存率',fmt:v=>fmtPct(v),lower:false},
-         {key:'d0Uninstall',label:'D0卸载率',fmt:v=>fmtPct(v),lower:true},
-         {key:'homeArrival',label:'D0首页到达率',fmt:v=>fmtPct(v),lower:false},
-         {key:'moduleClick',label:'D0模块点击率',fmt:v=>fmtPct(v),lower:false}],
+         {key:'d0Uninstall',label:`${S.day==='d0'?'D0':'D1'}卸载率`,fmt:v=>fmtPct(v),lower:true},
+         {key:'homeArrival',label:`${S.day==='d0'?'D0':'D1'}首页到达率`,fmt:v=>fmtPct(v),lower:false},
+         {key:'moduleClick',label:`${S.day==='d0'?'D0':'D1'}模块点击率`,fmt:v=>fmtPct(v),lower:false}],
         groups,keys,compareKey);
     }
   }else{
@@ -680,22 +742,48 @@ function renderM4(parent){
       html+=buildCmpTable(S.mode==='single'?S.projects[0]+' - '+dt.slice(5):'多项目对比 - '+dt.slice(5),
         [{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true},
          {key:'d1Retention',label:'D1留存率',fmt:v=>fmtPct(v),lower:false},
-         {key:'d0Uninstall',label:'D0卸载率',fmt:v=>fmtPct(v),lower:true},
-         {key:'homeArrival',label:'D0首页到达率',fmt:v=>fmtPct(v),lower:false},
-         {key:'moduleClick',label:'D0模块点击率',fmt:v=>fmtPct(v),lower:false}],
+         {key:'d0Uninstall',label:`${S.day==='d0'?'D0':'D1'}卸载率`,fmt:v=>fmtPct(v),lower:true},
+         {key:'homeArrival',label:`${S.day==='d0'?'D0':'D1'}首页到达率`,fmt:v=>fmtPct(v),lower:false},
+         {key:'moduleClick',label:`${S.day==='d0'?'D0':'D1'}模块点击率`,fmt:v=>fmtPct(v),lower:false}],
         groups,keys,compareKey);
     });
   }
+
+  // Summary 4.1 + close panel 0 + open panel 1
+  {
+    const g41=aggByCol(filterCommon({...sel(),dates:targetDates41}),compareKey);
+    const k41=Object.keys(g41);
+    const maxNU41=k41.length?k41.reduce((a,b)=>g41[b].newUsers>g41[a].newUsers?b:a):null;
+    const maxD141=k41.length?k41.reduce((a,b)=>g41[b].d1Retention>g41[a].d1Retention?b:a):null;
+    html+=`<div class="summary-box"><ul><li>${S.mode==='single'?'各版本中':'各项目中'}新用户数最多的是 <strong>${maxNU41?fmtKey(maxNU41):'-'}</strong>(${fmtInt(g41[maxNU41]?.newUsers||0)})，D1留存率最高的是 <strong>${maxD141?fmtKey(maxD141):'-'}</strong>(${fmtPct(g41[maxD141]?.d1Retention||0)})。</li></ul></div>`;
+  }
+  html+=`</div><div class="m4-tab-panel ${S.m4Tab===1?'active':''}">`;
 
   // Sub 4.2: Country acquisition trend
   html+='<div class="sub-title">4.2 国家买量趋势</div>';
   if(S.projects.length>1){
     S.projects.forEach(pr=>{
-      html+=`<div style="font-weight:600;color:var(--accent);margin:8px 0 4px">${pr}</div><div class="chart-box"><div class="chart-container" id="chart-m4-country-${pr}"></div></div>`;
+      html+=`<div style="font-weight:600;color:var(--accent);margin:8px 0 4px">项目 ${pr}</div><div class="chart-box"><div class="chart-container" id="chart-m4-country-${pr}"></div></div>`;
+    });
+  }else if(S.mode==='single'&&S.versions.length>1){
+    S.versions.forEach(v=>{
+      html+=`<div style="font-weight:600;color:var(--accent);margin:8px 0 4px">项目 ${S.projects[0]} ｜ 版本 ${v}</div><div class="chart-box"><div class="chart-container" id="chart-m4-country-${v}"></div></div>`;
     });
   }else{
     html+=`<div class="chart-box"><div class="chart-container" id="chart-m4-country"></div></div>`;
   }
+
+  // Summary 4.2 + close panel 1 + open panel 2
+  {
+    let maxBuyKey=null,maxBuyN=-1,maxCovKey=null,maxCovN=-1;
+    if(S.mode==='single'){
+      S.versions.forEach(v=>{const fd=filterCommon({...sel(),versions:[v]});const nu=sum(fd.map(r=>r.newUsers));const cov=new Set(fd.map(r=>r.country)).size;if(nu>maxBuyN){maxBuyN=nu;maxBuyKey=v}if(cov>maxCovN){maxCovN=cov;maxCovKey=v}});
+    }else{
+      S.projects.forEach(pr=>{const fd=filterCommon({...sel(),projects:[pr]});const nu=sum(fd.map(r=>r.newUsers));const cov=new Set(fd.map(r=>r.country)).size;if(nu>maxBuyN){maxBuyN=nu;maxBuyKey=pr}if(cov>maxCovN){maxCovN=cov;maxCovKey=pr}});
+    }
+    html+=`<div class="summary-box"><ul><li>${S.mode==='single'?'各版本中':'各项目中'}买量最多的是 <strong>${maxBuyKey?fmtKey(maxBuyKey):'-'}</strong>(${fmtInt(maxBuyN<0?0:maxBuyN)})，市场覆盖最广的是 <strong>${maxCovKey?fmtKey(maxCovKey):'-'}</strong>(${maxCovN<0?0:maxCovN}个国家)。</li></ul></div>`;
+  }
+  html+=`</div><div class="m4-tab-panel ${S.m4Tab===2?'active':''}">`;
 
   // Sub 4.3: Notification table with independent date filter
   const hasAll43=S.m4d43.includes('all');
@@ -713,13 +801,13 @@ function renderM4(parent){
     if(keys.length>0){
       html+=buildCmpTable('通知指标 - 均值总表',
         [{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true},
-         {key:'notifAuthRate',label:'D0 通知授权率',fmt:v=>fmtPct(v)},
-         {key:'notifShowRate',label:'D0通知展示率',fmt:v=>fmtPct(v)},
-         {key:'notifPerCapita',label:'D0人均展示次数',fmt:v=>fmt(v)},
-         {key:'notifClickRate',label:'D0通知点击率',fmt:v=>fmtPct(v)},
-         {key:'notifPerCapitaClick',label:'D0人均点击次数',fmt:v=>fmt(v,2)},
-         {key:'persistentClickRate',label:'D0常住通知栏点击率',fmt:v=>fmtPct(v)},
-         {key:'persistentPerCapitaClick',label:'D0常住通知栏人均点击次数',fmt:v=>fmt(v,2)}],
+         {key:'notifAuthRate',label:`${S.day==='d0'?'D0':'D1'} 通知授权率`,fmt:v=>fmtPct(v)},
+         {key:'notifShowRate',label:`${S.day==='d0'?'D0':'D1'}通知展示率`,fmt:v=>fmtPct(v)},
+         {key:'notifPerCapita',label:`${S.day==='d0'?'D0':'D1'}人均展示次数`,fmt:v=>fmt(v)},
+         {key:'notifClickRate',label:`${S.day==='d0'?'D0':'D1'}通知点击率`,fmt:v=>fmtPct(v)},
+         {key:'notifPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}人均点击次数`,fmt:v=>fmt(v,2)},
+         {key:'persistentClickRate',label:`${S.day==='d0'?'D0':'D1'}常住通知栏点击率`,fmt:v=>fmtPct(v)},
+         {key:'persistentPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}常住通知栏人均点击次数`,fmt:v=>fmt(v,2)}],
         groups,keys,compareKey);
     }
   }else{
@@ -730,16 +818,25 @@ function renderM4(parent){
       if(keys.length===0)return;
       html+=buildCmpTable('通知指标 - '+dt.slice(5),
         [{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true},
-         {key:'notifAuthRate',label:'D0 通知授权率',fmt:v=>fmtPct(v)},
-         {key:'notifShowRate',label:'D0通知展示率',fmt:v=>fmtPct(v)},
-         {key:'notifPerCapita',label:'D0人均展示次数',fmt:v=>fmt(v)},
-         {key:'notifClickRate',label:'D0通知点击率',fmt:v=>fmtPct(v)},
-         {key:'notifPerCapitaClick',label:'D0人均点击次数',fmt:v=>fmt(v,2)},
-         {key:'persistentClickRate',label:'D0常住通知栏点击率',fmt:v=>fmtPct(v)},
-         {key:'persistentPerCapitaClick',label:'D0常住通知栏人均点击次数',fmt:v=>fmt(v,2)}],
+         {key:'notifAuthRate',label:`${S.day==='d0'?'D0':'D1'} 通知授权率`,fmt:v=>fmtPct(v)},
+         {key:'notifShowRate',label:`${S.day==='d0'?'D0':'D1'}通知展示率`,fmt:v=>fmtPct(v)},
+         {key:'notifPerCapita',label:`${S.day==='d0'?'D0':'D1'}人均展示次数`,fmt:v=>fmt(v)},
+         {key:'notifClickRate',label:`${S.day==='d0'?'D0':'D1'}通知点击率`,fmt:v=>fmtPct(v)},
+         {key:'notifPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}人均点击次数`,fmt:v=>fmt(v,2)},
+         {key:'persistentClickRate',label:`${S.day==='d0'?'D0':'D1'}常住通知栏点击率`,fmt:v=>fmtPct(v)},
+         {key:'persistentPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}常住通知栏人均点击次数`,fmt:v=>fmt(v,2)}],
         groups,keys,compareKey);
     });
   }
+
+  // Summary 4.3 + close panel 2 + open panel 3
+  {
+    const g43=aggNotif(filterCommon({...sel(),dates:targetDates43}));
+    const k43=Object.keys(g43);
+    const maxClick43=k43.length?k43.reduce((a,b)=>g43[b].notifClickRate>g43[a].notifClickRate?b:a):null;
+    html+=`<div class="summary-box"><ul><li>${S.day==='d0'?'D0':'D1'}通知点击率最高的是 <strong>${maxClick43?fmtKey(maxClick43):'-'}</strong>(${fmtPct(g43[maxClick43]?.notifClickRate||0)})。</li></ul></div>`;
+  }
+  html+=`</div><div class="m4-tab-panel ${S.m4Tab===3?'active':''}">`;
 
   // Sub 4.4 & 4.5: Shared date filter
   const hasAll45=S.m4d45.includes('all');
@@ -757,7 +854,7 @@ function renderM4(parent){
       html+=`<div class="sub-title">4.4 ${pr} - 功能模块点击率排行</div>`;
       const fSel45P={...sel(),projects:[pr],dates:targetDates45};
       const fRows=filterFeature(fSel45P,{type:'首页模块点击率'});
-      const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r.d0);featAgg[r.analysisObject].ws.push(r.newUsers)});
+      const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r[S.day]);featAgg[r.analysisObject].ws.push(r.newUsers)});
       const featRank=Object.entries(featAgg).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
       featRank.slice(0,15).forEach(item=>{
         const pct=item.rate*100;const color=pct>20?'var(--accent2)':pct>10?'var(--accent)':'var(--amber)';
@@ -768,7 +865,7 @@ function renderM4(parent){
     html+='<div class="sub-title">4.4 功能模块点击率排行</div>';
     const fSel45={...sel(),dates:targetDates45};
     const fRows=filterFeature(fSel45,{type:'首页模块点击率'});
-    const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r.d0);featAgg[r.analysisObject].ws.push(r.newUsers)});
+    const featAgg={};fRows.forEach(r=>{if(!featAgg[r.analysisObject])featAgg[r.analysisObject]={vals:[],ws:[]};featAgg[r.analysisObject].vals.push(r[S.day]);featAgg[r.analysisObject].ws.push(r.newUsers)});
     featRankSingle=Object.entries(featAgg).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
     featRankSingle.slice(0,15).forEach(item=>{
       const pct=item.rate*100;const color=pct>20?'var(--accent2)':pct>10?'var(--accent)':'var(--amber)';
@@ -783,7 +880,7 @@ function renderM4(parent){
       const fSel45P={...sel(),projects:[pr],dates:targetDates45};
       const compRate={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
         const fr=filterFeature(fSel45P,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});
-        const vals=[],ws=[];fr.forEach(r=>{vals.push(r.d0);ws.push(r.newUsers)});
+        const vals=[],ws=[];fr.forEach(r=>{vals.push(r[S.day]);ws.push(r.newUsers)});
         compRate[fn]=wavg(vals,ws);
       });
       const compRank=Object.entries(compRate).map(([k,v])=>({name:k.replace('功能漏斗',''),rate:v})).filter(x=>x.rate!=null).sort((a,b)=>b.rate-a.rate);
@@ -797,7 +894,7 @@ function renderM4(parent){
     const fSel45={...sel(),dates:targetDates45};
     const compRate={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
       const fr=filterFeature(fSel45,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});
-      const vals=[],ws=[];fr.forEach(r=>{vals.push(r.d0);ws.push(r.newUsers)});
+      const vals=[],ws=[];fr.forEach(r=>{vals.push(r[S.day]);ws.push(r.newUsers)});
       compRate[fn]=wavg(vals,ws);
     });
     compRankSingle=Object.entries(compRate).map(([k,v])=>({name:k.replace('功能漏斗',''),rate:v})).filter(x=>x.rate!=null).sort((a,b)=>b.rate-a.rate);
@@ -807,20 +904,35 @@ function renderM4(parent){
     });
   }
 
-  // M4 Summary
-  if(S.projects.length>1){
-    html+=`<div class="summary-box"><ul>
-    <li>多项目模式下，各项目功能模块排行已分别展示。</li>
-    <li>建议重点关注完成率低于 25% 的功能模块,优化用户引导流程。</li></ul></div>`;
-  }else{
-    html+=`<div class="summary-box"><ul>
-    <li>点击率最高的功能模块为 <strong>${featRankSingle[0]?.name||'-'}</strong>(${fmt((featRankSingle[0]?.rate||0)*100,1)}%)。</li>
-    <li>完成率最高的漏斗为 <strong>${compRankSingle[0]?.name||'-'}</strong>(${fmt((compRankSingle[0]?.rate||0)*100,1)}%),最低为 <strong>${compRankSingle[compRankSingle.length-1]?.name||'-'}</strong>(${fmt((compRankSingle[compRankSingle.length-1]?.rate||0)*100,1)}%)。</li>
-    <li>建议重点关注完成率低于 25% 的功能模块,优化用户引导流程。</li></ul></div>`;
+  // Summary 4.4/4.5 + close panel 3
+  {
+    const fSel45s={...sel(),dates:targetDates45};
+    const fRowsS=filterFeature(fSel45s,{type:'首页模块点击率'});
+    const featAggS={};fRowsS.forEach(r=>{if(!featAggS[r.analysisObject])featAggS[r.analysisObject]={vals:[],ws:[]};featAggS[r.analysisObject].vals.push(r[S.day]);featAggS[r.analysisObject].ws.push(r.newUsers)});
+    const featRankAll=Object.entries(featAggS).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
+    const compRateAll={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;const fr=filterFeature(fSel45s,{type:fn,obj:getFunnelObjName(fn,'完成结果页')});const vals=[],ws=[];fr.forEach(r=>{vals.push(r[S.day]);ws.push(r.newUsers)});compRateAll[fn]=wavg(vals,ws)});
+    const compRankAll=Object.entries(compRateAll).map(([k,v])=>({name:k.replace('功能漏斗',''),rate:v})).filter(x=>x.rate!=null).sort((a,b)=>b.rate-a.rate);
+    let verInsight='';
+    if(S.mode==='single'&&S.versions.length>1){
+      let bestVer=null,bestFeatRate=-1;
+      S.versions.forEach(v=>{
+        const vfs={...fSel45s,versions:[v]};
+        const vfr=filterFeature(vfs,{type:'首页模块点击率'});
+        const vfa={};vfr.forEach(r=>{if(!vfa[r.analysisObject])vfa[r.analysisObject]={vals:[],ws:[]};vfa[r.analysisObject].vals.push(r[S.day]);vfa[r.analysisObject].ws.push(r.newUsers)});
+        const vavg=avg(Object.values(vfa).map(arr=>wavg(arr.vals,arr.ws)));
+        if(vavg>bestFeatRate){bestFeatRate=vavg;bestVer=v}
+      });
+      verInsight=`<li>各版本中功能点击率综合表现最优的是 <strong>${fmtKey(bestVer)}</strong>(平均点击率 ${fmt((bestFeatRate<0?0:bestFeatRate)*100,1)}%)。</li>`;
+    }
+    html+=`<div class="summary-box"><ul><li>点击率最高的功能是 <strong>${featRankAll[0]?.name||'-'}</strong>(${fmt((featRankAll[0]?.rate||0)*100,1)}%)，完成率最高的是 <strong>${compRankAll[0]?.name||'-'}</strong>(${fmt((compRankAll[0]?.rate||0)*100,1)}%)。</li>${verInsight}<li>建议重点关注完成率低于 25% 的功能模块,优化用户引导流程。</li></ul></div>`;
   }
+  html+=`</div>`;
 
   // Append all M4 HTML at once
   parent.insertAdjacentHTML('beforeend',html);
+
+  // Bind M4 tab buttons
+  parent.querySelectorAll('[data-m4tab]').forEach(b=>b.onclick=()=>{S.m4Tab=parseInt(b.dataset.m4tab);renderTab0()});
 
   // Bind 4.1 independent date filter
   parent.querySelectorAll('[data-m4d41]').forEach(b=>b.onclick=()=>{
@@ -865,17 +977,19 @@ function renderM4(parent){
     renderTab0();
   });
 
-  // Init M4 country chart
+  // Init M4 country chart (only when the country tab is visible)
   setTimeout(()=>{
-    const renderCountryChart=(chartId,prj)=>{
+    if(S.m4Tab!==1)return;
+    const renderCountryChart=(chartId,extraFilter)=>{
       const chart=initChart(chartId);if(!chart)return;
-      const fData=filterCommon({...sel(),projects:prj?[prj]:S.projects});
+      const baseSel={...sel(),...(extraFilter||{})};
+      const fData=filterCommon(baseSel);
       const countryTotals={};COUNTRIES.forEach(c=>countryTotals[c]=0);
       fData.forEach(r=>{countryTotals[r.country]=(countryTotals[r.country]||0)+r.newUsers});
       const topCountries=Object.entries(countryTotals).sort((a,b)=>b[1]-a[1]).slice(0,10).map(e=>e[0]);
       const series={};topCountries.forEach(c=>series[c]=[]);
       dates.forEach(dt=>{
-        const fd=filterCommon({...sel(),projects:prj?[prj]:S.projects,dates:[dt]});
+        const fd=filterCommon({...baseSel,dates:[dt]});
         const ct={};topCountries.forEach(c=>ct[c]=0);
         fd.forEach(r=>{if(ct[r.country]!=null)ct[r.country]+=r.newUsers});
         topCountries.forEach(c=>{const tot=Object.values(ct).reduce((a,b)=>a+b,0);series[c].push(tot>0?(ct[c]/tot*100):0)});
@@ -889,7 +1003,9 @@ function renderM4(parent){
         series:topCountries.map((c,i)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[i%10]},lineStyle:{width:2}}))});
     };
     if(S.projects.length>1){
-      S.projects.forEach(pr=>renderCountryChart('chart-m4-country-'+pr,pr));
+      S.projects.forEach(pr=>renderCountryChart('chart-m4-country-'+pr,{projects:[pr]}));
+    }else if(S.mode==='single'&&S.versions.length>1){
+      S.versions.forEach(v=>renderCountryChart('chart-m4-country-'+v,{versions:[v]}));
     }else{
       renderCountryChart('chart-m4-country',null);
     }
@@ -1213,7 +1329,7 @@ function buildFunnelOverview(sel){
     funnelMetrics.forEach(fm=>{
       const fmDef=funnelMap[fm];
       const fRows=featureData.filter(r=>g.rows.some(gr=>gr.date===r.date&&gr.project===r.project&&gr.country===r.country&&gr.version===r.version)&&r.analysisType===fmDef.type&&r.analysisObject===getFunnelObjName(fmDef.type,fmDef.step));
-      g.metrics[fm]=fRows.length>0?wavg(fRows.map(r=>r.d0),fRows.map(r=>r.newUsers)):null;
+      g.metrics[fm]=fRows.length>0?wavg(fRows.map(r=>r[S.day]),fRows.map(r=>r.newUsers)):null;
     });
   });
   const metrics=[{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true}];
@@ -1233,7 +1349,7 @@ function buildFunnelOverview(sel){
       if(i>0){
         let fv;
         if(m.key.startsWith('_metric_')){fv=groups[keys[0]]?.metrics?.[m.key.slice(8)]}else{fv=groups[keys[0]]?.[m.key]}
-        if(m.isNum){const diff=(val||0)-(fv||0);const absPct=fv?Math.abs(diff/fv)*100:0;h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${absPct.toFixed(2)}%</td>`}
+        if(m.isNum){const diff=(val||0)-(fv||0);h+=`<td class="num ${diff>=0?'cmp-up':'cmp-down'}">${diff>=0?'+':''}${fmtInt(diff)}</td>`}
         else{h+=`<td>${cmpCell(fv,val,m.lower)}</td>`}
       }
     });h+='</tr>';
@@ -1250,7 +1366,7 @@ function buildFunnelSummary(){
     const lastStep=fn==='首次启动流程漏斗'?'新用户首次首页曝光':fn.replace('漏斗','')+'完成结果页';
     const rows=featureData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===lastStep);
     if(rows.length>0){
-      const rate=wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers));
+      const rate=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers));
       if(rate!=null&&rate>bestFunnel.rate){bestFunnel={name:fn,rate:rate}}
       if(rate!=null&&rate<worstFunnel.rate){worstFunnel={name:fn,rate:rate}}
     }
@@ -1290,13 +1406,13 @@ function buildFunnelDetail(sel){
       h+='<tr><td>'+step+'</td>';
       keys.forEach((k,i)=>{
         const stepRows=featureData.filter(r=>groups[k].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,step));
-        const uv=stepRows.length>0?wavg(stepRows.map(r=>r.d0),stepRows.map(r=>r.newUsers)):null;
+        const uv=stepRows.length>0?wavg(stepRows.map(r=>r[S.day]),stepRows.map(r=>r.newUsers)):null;
         const pv=null;
         if(pvuv.includes('pv'))h+=`<td class="num">${pv!=null?fmt(pv):'<span class="missing">-</span>'}</td>`;
         if(pvuv.includes('uv'))h+=`<td class="num">${uv!=null?fmtPct(uv):'<span class="missing">-</span>'}</td>`;
         if(i>0){
           const fRows=featureData.filter(r=>groups[keys[0]].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,step));
-          const fuv=fRows.length>0?wavg(fRows.map(r=>r.d0),fRows.map(r=>r.newUsers)):null;
+          const fuv=fRows.length>0?wavg(fRows.map(r=>r[S.day]),fRows.map(r=>r.newUsers)):null;
           const fpv=null;
           h+=buildPVUVCompareCell(pv,uv,fpv,fuv,pvuv);
         }
@@ -1349,12 +1465,12 @@ function buildNotifOverview(sel){
   let fData=filterCommon(sel());fData=filterLatestVersion(fData);
   const groups=aggNotif(fData);const keys=Object.keys(groups).sort();const first=keys[0];
   const metrics=[{key:'newUsers',label:'新用户数',fmt:v=>fmtInt(v),isNum:true},
-    {key:'notifShowRate',label:'D0通知展示率',fmt:v=>fmtPct(v)},
-    {key:'notifPerCapita',label:'D0人均展示次数',fmt:v=>fmt(v)},
-    {key:'notifClickRate',label:'D0通知点击率',fmt:v=>fmtPct(v)},
-    {key:'notifPerCapitaClick',label:'D0人均点击次数',fmt:v=>fmt(v,2)},
-    {key:'persistentClickRate',label:'D0常住通知栏点击率',fmt:v=>fmtPct(v)},
-    {key:'persistentPerCapitaClick',label:'D0常住通知栏人均点击次数',fmt:v=>fmt(v,2)}];
+    {key:'notifShowRate',label:`${S.day==='d0'?'D0':'D1'}通知展示率`,fmt:v=>fmtPct(v)},
+    {key:'notifPerCapita',label:`${S.day==='d0'?'D0':'D1'}人均展示次数`,fmt:v=>fmt(v)},
+    {key:'notifClickRate',label:`${S.day==='d0'?'D0':'D1'}通知点击率`,fmt:v=>fmtPct(v)},
+    {key:'notifPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}人均点击次数`,fmt:v=>fmt(v,2)},
+    {key:'persistentClickRate',label:`${S.day==='d0'?'D0':'D1'}常住通知栏点击率`,fmt:v=>fmtPct(v)},
+    {key:'persistentPerCapitaClick',label:`${S.day==='d0'?'D0':'D1'}常住通知栏人均点击次数`,fmt:v=>fmt(v,2)}];
   let h='<div class="table-wrap"><table class="bi-table"><thead><tr><th>指标</th>';
   keys.forEach((k,i)=>{h+=`<th>${k}</th>`;if(i>0)h+=`<th>对比值</th>`});
   h+='</tr></thead><tbody>';
@@ -1365,7 +1481,7 @@ function buildNotifOverview(sel){
       h+=`<td class="num">${val!=null?(m.fmt?m.fmt(val):fmt(val)):'<span class="missing">-</span>'}</td>`;
       if(i>0){
         const fv=groups[first]?.[m.key];const cv=val;
-        if(m.isNum){const d=(cv||0)-(fv||0);const absPct=fv?Math.abs(d/fv)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
+        if(m.isNum){const d=(cv||0)-(fv||0);h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}">${d>=0?'+':''}${fmtInt(d)}</td>`}
         else{h+=`<td>${cmpCell(fv,cv,m.lower)}</td>`}
       }
     });h+='</tr>';
@@ -1375,10 +1491,10 @@ function buildNotifOverview(sel){
 
 function buildNotifSummary(){
   const fData=filterCommon({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
-  const showRate=wavg(fData.map(r=>r.notifShowRate.d0),fData.map(r=>r.newUsers));
-  const clickRate=wavg(fData.map(r=>r.notifClickRate.d0),fData.map(r=>r.newUsers));
+  const showRate=wavg(fData.map(r=>r.notifShowRate[S.day]),fData.map(r=>r.newUsers));
+  const clickRate=wavg(fData.map(r=>r.notifClickRate[S.day]),fData.map(r=>r.newUsers));
   return`<div class="summary-box"><ul>
-  <li>整体 D0 通知展示率 <strong class="num">${fmtPct(showRate)}</strong>,D0 点击率 <strong class="num">${fmtPct(clickRate)}</strong>。</li>
+  <li>整体 ${S.day==='d0'?'D0':'D1'} 通知展示率 <strong class="num">${fmtPct(showRate)}</strong>,${S.day==='d0'?'D0':'D1'} 点击率 <strong class="num">${fmtPct(clickRate)}</strong>。</li>
   <li>通知授权率直接影响后续展示和点击表现,建议持续优化授权引导时机。</li></ul></div>`;
 }
 
@@ -1426,20 +1542,20 @@ function buildNotifCopyTable(sel){
   keys.forEach((k,i)=>{
     const nu=sum(groups[k].rows.map(r=>r.newUsers));
     h+=`<td class="num" colspan="${colCount}">${fmtInt(nu)}</td>`;
-    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;const absPct=fnu?Math.abs(d/fnu)*100:0;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${absPct.toFixed(2)}%</td>`}
+    if(i>0){const fnu=sum(groups[keys[0]].rows.map(r=>r.newUsers));const d=nu-fnu;h+=`<td class="num ${d>=0?'cmp-up':'cmp-down'}" colspan="${colCount}">${d>=0?'+':''}${fmtInt(d)}</td>`}
   });h+='</tr>';
   NOTIF_CODES.forEach(code=>{
     h+=`<tr><td class="num" style="color:var(--accent)">${NOTIF_MAP[code]?.label||code}</td><td>${NOTIF_MAP[code]?.desc||code}</td>`;
     keys.forEach((k,i)=>{
       const tRows=timingData.filter(r=>groups[k].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisObject===code);
-      const uv=tRows.length>0?wavg(tRows.map(r=>isClick?r.d0.clickRate:r.d0.showRate),tRows.map(r=>r.newUsers)):null;
-      const pv=tRows.length>0?wavg(tRows.map(r=>isClick?r.d0.perCapitaClick:r.d0.perCapita),tRows.map(r=>r.newUsers)):null;
+      const uv=tRows.length>0?wavg(tRows.map(r=>isClick?r[S.day].clickRate:r[S.day].showRate),tRows.map(r=>r.newUsers)):null;
+      const pv=tRows.length>0?wavg(tRows.map(r=>isClick?r[S.day].perCapitaClick:r[S.day].perCapita),tRows.map(r=>r.newUsers)):null;
       if(pvuv.includes('pv'))h+=`<td class="num">${pv!=null?fmt(pv):'<span class="missing">-</span>'}</td>`;
       if(pvuv.includes('uv'))h+=`<td class="num">${uv!=null?fmtPct(uv):'<span class="missing">-</span>'}</td>`;
       if(i>0){
         const ftRows=timingData.filter(r=>groups[keys[0]].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisObject===code);
-        const fuv=ftRows.length>0?wavg(ftRows.map(r=>isClick?r.d0.clickRate:r.d0.showRate),ftRows.map(r=>r.newUsers)):null;
-        const fpv=ftRows.length>0?wavg(ftRows.map(r=>isClick?r.d0.perCapitaClick:r.d0.perCapita),ftRows.map(r=>r.newUsers)):null;
+        const fuv=ftRows.length>0?wavg(ftRows.map(r=>isClick?r[S.day].clickRate:r[S.day].showRate),ftRows.map(r=>r.newUsers)):null;
+        const fpv=ftRows.length>0?wavg(ftRows.map(r=>isClick?r[S.day].perCapitaClick:r[S.day].perCapita),ftRows.map(r=>r.newUsers)):null;
         h+=buildPVUVCompareCell(pv,uv,fpv,fuv,pvuv);
       }
     });h+='</tr>';
@@ -1451,16 +1567,16 @@ function buildNotifRankBars(sel){
   const targetDates=S.notifDate==='all'?[...S.dates]:[S.notifDate];
   const fData=filterCommon({...sel,dates:targetDates});
   const allRows=timingData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version));
-  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r.d0.showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
+  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r[S.day].showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
   const showSorted=Object.entries(showRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws),label:NOTIF_MAP[k]?.label||k})).sort((a,b)=>b.rate-a.rate);
-  let h='<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--accent2)">展示排行</div>';
+  let h='<div style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--accent2)">展示排行</div>';
   showSorted.forEach(item=>{
     const pct=item.rate*100;const color=pct>35?'var(--accent2)':pct>25?'var(--accent)':'var(--amber)';
     h+=`<div class="bar-row"><span class="bar-label">${item.code}: ${item.label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
   });
-  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r.d0.clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
+  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r[S.day].clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
   const clickSorted=Object.entries(clickRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws),label:NOTIF_MAP[k]?.label||k})).sort((a,b)=>b.rate-a.rate);
-  h+='<div style="font-size:13px;font-weight:600;margin:12px 0 8px;color:var(--accent2)">点击排行</div>';
+  h+='<div style="font-size:15px;font-weight:600;margin:12px 0 8px;color:var(--accent2)">点击排行</div>';
   clickSorted.forEach(item=>{
     const pct=item.rate*100;const color=pct>12?'var(--accent2)':pct>7?'var(--accent)':'var(--amber)';
     h+=`<div class="bar-row"><span class="bar-label">${item.code}: ${item.label}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct*5,100)}%;background:${color}"></div></div><span class="bar-val num">${fmt(pct,1)}%</span></div>`;
@@ -1471,9 +1587,9 @@ function buildNotifRankBars(sel){
 function buildNotifCopySummary(){
   const fData=filterCommon({projects:S.projects,countries:S.countries,dates:S.dates,versions:S.versions});
   const allRows=timingData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version));
-  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r.d0.showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
+  const showRank={};allRows.forEach(r=>{if(!showRank[r.analysisObject])showRank[r.analysisObject]={vals:[],ws:[]};showRank[r.analysisObject].vals.push(r[S.day].showRate);showRank[r.analysisObject].ws.push(r.newUsers)});
   const best=Object.entries(showRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate)[0];
-  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r.d0.clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
+  const clickRank={};allRows.forEach(r=>{if(!clickRank[r.analysisObject])clickRank[r.analysisObject]={vals:[],ws:[]};clickRank[r.analysisObject].vals.push(r[S.day].clickRate);clickRank[r.analysisObject].ws.push(r.newUsers)});
   const bestC=Object.entries(clickRank).map(([k,v])=>({code:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate)[0];
   return`<div class="summary-box"><ul>
   <li>展示率最高的文案:<strong>${best?.code||'-'}(${NOTIF_MAP[best?.code]?.label||'-'})</strong>(${fmt(best?.rate*100)}%)。</li>
@@ -1515,11 +1631,11 @@ function renderTab4(){
 function buildFeatureInsights(sel){
   const fData=filterCommon(sel());
   const fRows=filterFeature(sel(),{type:'首页模块点击率'});
-  const clickAgg={};fRows.forEach(r=>{if(!clickAgg[r.analysisObject])clickAgg[r.analysisObject]={vals:[],ws:[]};clickAgg[r.analysisObject].vals.push(r.d0);clickAgg[r.analysisObject].ws.push(r.newUsers)});
+  const clickAgg={};fRows.forEach(r=>{if(!clickAgg[r.analysisObject])clickAgg[r.analysisObject]={vals:[],ws:[]};clickAgg[r.analysisObject].vals.push(r[S.day]);clickAgg[r.analysisObject].ws.push(r.newUsers)});
   const clickSorted=Object.entries(clickAgg).map(([k,v])=>({name:k,rate:wavg(v.vals,v.ws)})).sort((a,b)=>b.rate-a.rate);
   const compAgg={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
     const rows=featureData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,'完成结果页'));
-    if(rows.length>0){compAgg[fn]=wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers))}}
+    if(rows.length>0){compAgg[fn]=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers))}}
   );
   const compSorted=Object.entries(compAgg).map(([k,v])=>({name:k,rate:v})).sort((a,b)=>b.rate-a.rate);
   const worstComp=compSorted[compSorted.length-1];
@@ -1545,13 +1661,13 @@ function buildFeatureClickTable(sel){
     h+=`<td title="${mod}">${mod.length>20?mod.slice(0,20)+'...':mod}</td>`;
     keys.forEach((k,i)=>{
       const rows=featureData.filter(r=>groups[k].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType==='首页模块点击率'&&r.analysisObject===mod);
-      const uv=rows.length>0?wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers)):null;
+      const uv=rows.length>0?wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers)):null;
       const pv=null;
       if(pvuv.includes('pv'))h+=`<td class="num"><span class="missing">-</span></td>`;
       if(pvuv.includes('uv'))h+=`<td class="num">${uv!=null?fmtPct(uv):'<span class="missing">-</span>'}</td>`;
       if(i>0){
         const fRows=featureData.filter(r=>groups[keys[0]].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType==='首页模块点击率'&&r.analysisObject===mod);
-        const fuv=fRows.length>0?wavg(fRows.map(r=>r.d0),fRows.map(r=>r.newUsers)):null;
+        const fuv=fRows.length>0?wavg(fRows.map(r=>r[S.day]),fRows.map(r=>r.newUsers)):null;
         h+=buildPVUVCompareCell(pv,uv,null,fuv,pvuv);
       }
     });h+='</tr>';
@@ -1575,13 +1691,13 @@ function buildFeatureUsageTable(sel){
     h+=`<td>${fn.replace('功能漏斗','')}</td>`;
     keys.forEach((k,i)=>{
       const rows=featureData.filter(r=>groups[k].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,'完成结果页'));
-      const uv=rows.length>0?wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers)):null;
+      const uv=rows.length>0?wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers)):null;
       const pv=null;
       if(pvuv.includes('pv'))h+=`<td class="num">${pv!=null?fmt(pv):'<span class="missing">-</span>'}</td>`;
       if(pvuv.includes('uv'))h+=`<td class="num">${uv!=null?fmtPct(uv):'<span class="missing">-</span>'}</td>`;
       if(i>0){
         const fRows=featureData.filter(r=>groups[keys[0]].rows.some(g=>g.date===r.date&&g.project===r.project&&g.country===r.country&&g.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,'完成结果页'));
-        const fuv=fRows.length>0?wavg(fRows.map(r=>r.d0),fRows.map(r=>r.newUsers)):null;
+        const fuv=fRows.length>0?wavg(fRows.map(r=>r[S.day]),fRows.map(r=>r.newUsers)):null;
         h+=buildPVUVCompareCell(pv,uv,null,fuv,pvuv);
       }
     });h+='</tr>';
@@ -1592,11 +1708,11 @@ function buildFeatureUsageTable(sel){
 function buildFeatureSummary(sel){
   const fData=filterCommon(sel());
   const fRows=filterFeature(sel(),{type:'首页模块点击率'});
-  const clickAgg={};fRows.forEach(r=>{if(!clickAgg[r.analysisObject])clickAgg[r.analysisObject]={vals:[],ws:[]};clickAgg[r.analysisObject].vals.push(r.d0);clickAgg[r.analysisObject].ws.push(r.newUsers)});
+  const clickAgg={};fRows.forEach(r=>{if(!clickAgg[r.analysisObject])clickAgg[r.analysisObject]={vals:[],ws:[]};clickAgg[r.analysisObject].vals.push(r[S.day]);clickAgg[r.analysisObject].ws.push(r.newUsers)});
   const avgClick=avg(Object.values(clickAgg).map(v=>wavg(v.vals,v.ws)));
   const compRates={};FUNNELS.forEach(fn=>{if(fn==='首次启动流程漏斗')return;
     const rows=featureData.filter(r=>fData.some(fd=>fd.date===r.date&&fd.project===r.project&&fd.country===r.country&&fd.version===r.version)&&r.analysisType===fn&&r.analysisObject===getFunnelObjName(fn,'完成结果页'));
-    if(rows.length>0)compRates[fn]=wavg(rows.map(r=>r.d0),rows.map(r=>r.newUsers))});
+    if(rows.length>0)compRates[fn]=wavg(rows.map(r=>r[S.day]),rows.map(r=>r.newUsers))});
   const avgComp=avg(Object.values(compRates));
   return `<div class="summary-box"><ul>
   <li>首页功能平均点击率 <strong class="num">${fmtPct(avgClick)}</strong>,各功能入口差异较大。</li>
