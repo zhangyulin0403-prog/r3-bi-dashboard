@@ -153,10 +153,25 @@ table.bi-table{width:100%;border-collapse:collapse;font-size:13px}
 .bi-table .section-row td:first-child{background:rgba(59,130,246,.2)}
 .cmp-up{color:var(--accent2)}.cmp-down{color:var(--warn)}
 .missing{color:var(--muted);font-style:italic}
-.summary-box{background:var(--bg2);border-radius:8px;padding:16px 20px;margin:16px 0;font-size:14px;line-height:1.8}
-.summary-box ul{padding-left:20px;color:var(--muted)}
-.summary-box li{margin-bottom:4px}
+.summary-box{background:var(--bg2);border-radius:8px;padding:20px 24px;margin:16px 0;font-size:14px;line-height:1.9}
+.summary-box ul{list-style:none;padding-left:0;color:var(--muted);margin:0}
+.summary-box li{margin-bottom:14px;padding:12px 16px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--accent);display:block}
+.summary-box li:last-child{margin-bottom:0}
 .summary-box li strong{color:var(--ink)}
+.summary-box .si-title{display:block;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.summary-box .si-body{display:block;color:var(--muted);line-height:1.9}
+.summary-box .si-body .num{color:var(--ink);font-weight:600}
+.summary-box .si-sub{display:block;margin-top:6px;padding-left:12px;border-left:2px solid var(--rule);color:var(--muted);font-size:13px;line-height:1.8}
+.summary-box .si-tag{display:inline-block;background:var(--bg2);color:var(--accent);padding:2px 10px;border-radius:4px;font-size:12px;font-weight:600;margin:2px 6px 2px 0}
+.summary-box .si-steps{display:block;margin-top:8px;counter-reset:step}
+.summary-box .si-step{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;padding:6px 10px;background:var(--bg2);border-radius:6px;font-size:13px;line-height:1.7}
+.summary-box .si-step:last-child{margin-bottom:0}
+.summary-box .si-step-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.summary-box .si-step-text{flex:1;color:var(--muted)}
+.summary-box .si-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}
+.summary-box .si-metric-card{background:var(--bg2);border-radius:6px;padding:8px 12px;border:1px solid var(--rule)}
+.summary-box .si-metric-card .mc-label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.summary-box .si-metric-card .mc-value{font-size:16px;font-weight:700;color:var(--ink)}
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:13px}
 .bar-row .bar-label{min-width:180px;color:var(--muted);text-align:right;font-size:12px}
 .bar-row .bar-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative}
@@ -15396,13 +15411,46 @@ function renderTab0(){
   nextSteps.push(`建立D1留存<25%或功能点击<5%的自动告警机制`);
   if(nextSteps.length>3)nextSteps.splice(3);
 
-  p.insertAdjacentHTML('beforeend',`<div class="section-title">M3: 数据概况总结</div><div class="summary-box"><ul>
-  <li><strong>新增用户规模及波动:</strong>所选日期共 <strong class="num">${fmtInt(totalNU)}</strong> 新增用户，日均 <strong class="num">${fmtInt(avgNU)}</strong> 人${peakDay?`，峰值日 <strong class="num">${peakDay.dt}</strong>(${fmtInt(peakDay.nu)})，低谷日 <strong class="num">${lowDay?lowDay.dt:'-'}</strong>(${fmtInt(lowDay?lowDay.nu:0)})`:''}，波动系数 <strong class="num">${(cv*100).toFixed(0)}%</strong>${cv>0.3?'，波动较大需关注渠道稳定性':'，波动平稳'}。</li>
-  ${metricTrend?`<li><strong>指标同向性分析:</strong>${metricTrend}。</li>`:''}
-  ${anomalyDetail?`<li><strong>异常日期定位:</strong>${anomalyDetail}。</li>`:''}
-  <li><strong>当前业务瓶颈:</strong>${mainBottleneck}。</li>
-  <li><strong>下一步拆分动作:</strong>${nextSteps.map((s,i)=>`${i+1}) ${s}`).join('；')}。</li>
-  </ul></div>`);
+  // Build structured HTML for M3 summary
+  const m3Items=[];
+  // 1. User scale & fluctuation
+  m3Items.push(`<li><span class="si-title">新增用户规模及波动</span><span class="si-body">所选日期共 <strong class="num">${fmtInt(totalNU)}</strong> 新增用户，日均 <strong class="num">${fmtInt(avgNU)}</strong> 人</span>
+    ${peakDay?`<div class="si-metric-grid"><div class="si-metric-card"><div class="mc-label">峰值日</div><div class="mc-value num">${peakDay.dt}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${fmtInt(peakDay.nu)} 人</div></div>
+    <div class="si-metric-card"><div class="mc-label">低谷日</div><div class="mc-value num">${lowDay?lowDay.dt:'-'}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${fmtInt(lowDay?lowDay.nu:0)} 人</div></div>
+    <div class="si-metric-card"><div class="mc-label">波动系数</div><div class="mc-value num">${(cv*100).toFixed(0)}%</div><div style="font-size:12px;color:${cv>0.3?'var(--warn)':'var(--accent2)'};margin-top:2px">${cv>0.3?'波动较大':'波动平稳'}</div></div></div>`:''}</li>`);
+  // 2. Metric direction analysis
+  if(metricTrend){
+    let trendHtml='';
+    let trendSummary='';
+    if(S.mode==='single'&&S.versions.length>1&&Object.keys(perVer).length>=2){
+      const sorted=[...Object.entries(perVer)].sort((a,b)=>a[0].localeCompare(b[0]));
+      const first=sorted[0],last=sorted[sorted.length-1];
+      trendHtml=`<div class="si-metric-grid">
+        <div class="si-metric-card"><div class="mc-label">${first[0]} → ${last[0]}</div><div style="display:flex;gap:12px;margin-top:4px">
+          <div><span style="color:var(--muted);font-size:12px">D1留存</span><br><strong class="num" style="color:${last[1].d1>first[1].d1?'var(--accent2)':'var(--warn)'}">${fmtPct(first[1].d1)} → ${fmtPct(last[1].d1)} ${last[1].d1>first[1].d1?'↑':'↓'}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px">首页到达</span><br><strong class="num" style="color:${last[1].home>first[1].home?'var(--accent2)':'var(--warn)'}">${fmtPct(first[1].home)} → ${fmtPct(last[1].home)} ${last[1].home>first[1].home?'↑':'↓'}</strong></div>
+          <div><span style="color:var(--muted);font-size:12px">功能点击</span><br><strong class="num" style="color:${last[1].feat>first[1].feat?'var(--accent2)':'var(--warn)'}">${fmtPct(first[1].feat)} → ${fmtPct(last[1].feat)} ${last[1].feat>first[1].feat?'↑':'↓'}</strong></div>
+        </div></div></div>`;
+      const allUp=last[1].d1>first[1].d1&&last[1].home>first[1].home&&last[1].feat>first[1].feat;
+      const allDown=last[1].d1<first[1].d1&&last[1].home<first[1].home&&last[1].feat<first[1].feat;
+      trendSummary=allUp?'三项指标同向改善，版本迭代效果显著':allDown?'三项指标同向恶化，需立即回溯版本变更':'指标走势分化，需进一步拆分定位';
+    }else if(S.projects.length>1&&Object.keys(perProj).length>=2){
+      const entries=Object.entries(perProj);
+      trendHtml=`<div class="si-metric-grid">${entries.map(([k,v])=>`<div class="si-metric-card"><div class="mc-label">${k}</div><div style="margin-top:4px"><span style="color:var(--muted);font-size:12px">D1: </span><strong class="num">${fmtPct(v.d1)}</strong> 　<span style="color:var(--muted);font-size:12px">首页: </span><strong class="num">${fmtPct(v.home)}</strong> 　<span style="color:var(--muted);font-size:12px">点击: </span><strong class="num">${fmtPct(v.feat)}</strong></div></div>`).join('')}</div>`;
+      trendSummary=metricTrend;
+    }
+    m3Items.push(`<li><span class="si-title">D1 留存 / 首页到达 / 功能点击 同向性</span>${trendHtml}<span class="si-sub">${trendSummary}</span></li>`);
+  }
+  // 3. Anomaly
+  if(anomalyDetail){
+    m3Items.push(`<li><span class="si-title">异常日期及对应版本、国家</span><span class="si-body">${anomalyDetail}</span></li>`);
+  }
+  // 4. Bottleneck
+  m3Items.push(`<li><span class="si-title">当前最主要的业务瓶颈</span><span class="si-body">${mainBottleneck}</span></li>`);
+  // 5. Next steps
+  m3Items.push(`<li><span class="si-title">下一步拆分维度和验证动作</span><div class="si-steps">${nextSteps.map((s,i)=>`<div class="si-step"><div class="si-step-num">${i+1}</div><div class="si-step-text">${s}</div></div>`).join('')}</div></li>`);
+
+  p.insertAdjacentHTML('beforeend',`<div class="section-title">M3: 数据概况总结</div><div class="summary-box"><ul>${m3Items.join('')}</ul></div>`);
 
   // M4: Independent date comparison - build all HTML then append once to avoid duplicate titles
   renderM4(p);
