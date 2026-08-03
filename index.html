@@ -15825,7 +15825,7 @@ function renderTab1(){
   const p=document.getElementById('panel-1');
   document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active'));p.classList.add('active');
   const sel=()=>({projects:S.projects,countries:S.countries,dates:S.dates,versions:VERSIONS});
-  let html='<div class="section-title">M1: 筛选条件</div><div class="local-filter"><span style="color:var(--muted)">使用全局筛选条件,分析各国家买量分布（含所有版本,按日期汇总）</span></div>';
+  let html='<div class="section-title">概况总结</div>';
   html+=buildCountrySummary(sel);
   html+='<div class="section-title">M2: TOP 10 买量国家结构</div>';
   html+=S.mode==='single'?buildCountryTable_Single(sel):buildCountryTable_Multi(sel);
@@ -15839,86 +15839,130 @@ function buildCountrySummary(sel){
   const totalUsers=sum(fData.map(r=>r.newUsers));
   if(totalUsers===0){return'<div class="summary-box"><ul><li>当前筛选条件下暂无买量数据,请调整筛选条件后重试。</li></ul></div>'}
   const dates=[...new Set(fData.map(r=>r.date))].sort();
+
+  /* helper: aggregate by country (optionally filtered by project) */
+  const aggByCountry=(extra)=>{
+    const fd=extra?filterCommon({...sel(),...extra}):fData;
+    const cAgg={};fd.forEach(r=>{cAgg[r.country]=(cAgg[r.country]||0)+r.newUsers});
+    return Object.entries(cAgg).sort((a,b)=>b[1]-a[1]);
+  };
+  /* helper: daily series for a country */
+  const getCountryDaily=(proj,country)=>{
+    return dates.map(dt=>{
+      const fd=filterCommon({...sel(),...(proj?{projects:[proj]}:{}),dates:[dt]});
+      return sum(fd.filter(r=>r.country===country).map(r=>r.newUsers));
+    });
+  };
+  /* helper: find biggest day-over-day change */
+  const findBiggestChange=(proj)=>{
+    const cSorted=aggByCountry(proj?{projects:[proj]}:null);
+    let result=null;
+    cSorted.forEach(([c])=>{
+      const daily=getCountryDaily(proj,c);
+      for(let i=1;i<daily.length;i++){
+        const diff=daily[i]-daily[i-1];
+        if(daily[i-1]===0)continue;
+        const pct=Math.abs(diff/daily[i-1]*100);
+        if(!result||pct>result.changePct){
+          result={country:c,changePct:pct,absDiff:Math.abs(diff),type:diff>0?'增长':'流失',date:dates[i],before:daily[i-1],after:daily[i]};
+        }
+      }
+    });
+    return result;
+  };
+
   let h='<div class="summary-box"><ul>';
 
   if(S.mode==='single'){
-    // ===== 单项目分析（不分版本，只看日期汇总） =====
     const proj=S.projects[0];
-    const cAgg={};fData.forEach(r=>{cAgg[r.country]=(cAgg[r.country]||0)+r.newUsers});
-    const cSorted=Object.entries(cAgg).sort((a,b)=>b[1]-a[1]);
+    const cSorted=aggByCountry();
     const top1=cSorted[0];
     const top1Pct=top1?(top1[1]/totalUsers*100):0;
-    const top10Sum=cSorted.slice(0,10).reduce((acc,e)=>acc+e[1],0);
-    const top10Pct=totalUsers>0?(top10Sum/totalUsers*100):0;
-    const countryCount=cSorted.length;
+    const biggestChange=findBiggestChange(proj);
 
-    h+=`<li><strong>市场集中度:</strong> ${proj} 的买量${top1?`高度集中于 <strong>${top1[0]}</strong>(占比 ${top1Pct.toFixed(2)}%),`:''} TOP 10 国家合计占比 ${top10Pct.toFixed(2)}%,`;
-    h+=top1Pct>80?`单一市场依赖严重,建议拓展第二梯队市场以分散风险。`:`头部市场集中度适中,市场结构相对健康。`;
-    h+='</li>';
-    h+=`<li><strong>市场覆盖:</strong> 共覆盖 <strong class="num">${countryCount}</strong> 个国家,日均买量 <strong class="num">${fmtInt(totalUsers/dates.length)}</strong> 人。`;
-    const avgUsersPerCountry=totalUsers/countryCount;
-    const aboveAvg=cSorted.filter(e=>e[1]>avgUsersPerCountry).length;
-    h+=`平均每国买量 ${fmtInt(avgUsersPerCountry)} 人,仅 ${aboveAvg} 个国家高于均值,说明买量分布呈典型的"二八法则",头部少数市场贡献了大部分用户。</li>`;
+    /* 1. 哪个国家贡献最大 */
+    h+=`<li><span class="si-title">哪个国家贡献最大</span><span class="si-body"><strong>${top1[0]}</strong> 是 ${proj} 最大的买量市场，贡献 <strong class="num">${fmtInt(top1[1])}</strong> 人，占总买量 <strong class="num">${top1Pct.toFixed(2)}%</strong>。`;
+    if(top1Pct>80)h+=`单一市场依赖度极高，建议拓展第二梯队市场分散风险。`;
+    else if(top1Pct>50)h+=`市场集中度较高，头部效应明显。`;
+    else h+=`市场分布相对均匀，无明显单一依赖。`;
+    h+='</span></li>';
+
+    /* 2. 哪个国家增长或流失最明显 */
+    if(biggestChange){
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><strong>${biggestChange.country}</strong> ${biggestChange.type}最显著，${biggestChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(biggestChange.before)}</strong> 人${biggestChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(biggestChange.after)}</strong> 人，变动幅度 <strong class="num">${biggestChange.changePct.toFixed(1)}%</strong>。`;
+      h+=biggestChange.type==='增长'?'需关注增长是否来自有效流量，避免低质量用户涌入。':'需排查买量渠道或素材问题，及时调整投放策略。';
+      h+='</span></li>';
+
+      /* 3. 异动从哪一天开始 */
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">异动起始于 <strong class="num">${biggestChange.date}</strong>，${biggestChange.country} 买量${biggestChange.type}最为显著，建议回溯当日投放计划与渠道调整记录，定位异动根因。</span></li>`;
+    }else if(dates.length<=1){
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body">当前仅选择了单日数据，无法分析趋势变化，请选择多个日期查看增长/流失情况。</span></li>`;
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">需选择多个日期才能分析异动起始时间。</span></li>`;
+    }else{
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body">所选日期范围内各国买量波动平稳，未出现显著异动。</span></li>`;
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">所选日期范围内无明显异动。</span></li>`;
+    }
+
   }else{
-    // ===== 多项目对比深度分析 =====
-    const projAgg={};
+    /* ===== 多项目模式 ===== */
+    const projData={};
     S.projects.forEach(proj=>{
-      const pd=fData.filter(r=>r.project===proj);
+      const pd=filterCommon({...sel(),projects:[proj]});
       const total=sum(pd.map(r=>r.newUsers));
-      const cAgg={};pd.forEach(r=>{cAgg[r.country]=(cAgg[r.country]||0)+r.newUsers});
-      const cSorted=Object.entries(cAgg).sort((a,b)=>b[1]-a[1]);
-      projAgg[proj]={total,countries:cSorted,top1:cSorted[0],countryCount:cSorted.length};
+      const cSorted=aggByCountry({projects:[proj]});
+      projData[proj]={total,cSorted,top1:cSorted[0],countryCount:cSorted.length};
     });
-    const projSorted=Object.entries(projAgg).sort((a,b)=>b[1].total-a[1].total);
+    const projSorted=Object.entries(projData).sort((a,b)=>b[1].total-a[1].total);
     const leader=projSorted[0];
     const follower=projSorted[projSorted.length-1];
-    const leaderShare=totalUsers>0?(leader[1].total/totalUsers*100):0;
 
-    h+=`<li><strong>买量规模对比:</strong> ${projSorted.map(e=>`${e[0]} <strong class="num">${fmtInt(e[1].total)}</strong>人`).join(' / ')},${leader[0]} 占总买量 ${leaderShare.toFixed(2)}%,`;
+    /* 1. 哪个国家贡献最大 (per project) */
+    h+=`<li><span class="si-title">哪个国家贡献最大</span><span class="si-body">`;
+    projSorted.forEach(([proj,d])=>{
+      const pct=d.total>0?(d.top1[1]/d.total*100):0;
+      h+=`<span class="si-tag">${proj}</span><strong>${d.top1[0]}</strong> 贡献 <strong class="num">${fmtInt(d.top1[1])}</strong> 人，占比 <strong class="num">${pct.toFixed(2)}%</strong>。`;
+    });
+    h+='</span></li>';
+
+    /* 2. 哪个国家增长或流失最明显 (across all projects) */
+    let globalChange=null,globalProj='';
+    S.projects.forEach(proj=>{
+      const ch=findBiggestChange(proj);
+      if(ch&&(!globalChange||ch.changePct>globalChange.changePct)){globalChange=ch;globalProj=proj}
+    });
+    if(globalChange){
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><span class="si-tag">${globalProj}</span><strong>${globalChange.country}</strong> ${globalChange.type}最显著，${globalChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(globalChange.before)}</strong> 人${globalChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(globalChange.after)}</strong> 人，变动幅度 <strong class="num">${globalChange.changePct.toFixed(1)}%</strong>。`;
+      h+=globalChange.type==='增长'?'需关注增长质量。':'需排查渠道或素材问题。';
+      h+='</span></li>';
+      /* 3. 异动从哪一天开始 */
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">异动起始于 <strong class="num">${globalChange.date}</strong>，${globalProj} 的 ${globalChange.country} 买量${globalChange.type}最为显著，建议回溯当日投放调整记录。</span></li>`;
+    }else if(dates.length<=1){
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body">当前仅选择了单日数据，无法分析趋势变化。</span></li>`;
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">需选择多个日期才能分析异动起始时间。</span></li>`;
+    }else{
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body">所选日期范围内各国买量波动平稳，未出现显著异动。</span></li>`;
+      h+=`<li><span class="si-title">异动从哪一天开始</span><span class="si-body">所选日期范围内无明显异动。</span></li>`;
+    }
+
+    /* 4. 项目之间的对比 */
+    h+=`<li><span class="si-title">项目之间的对比</span><span class="si-body">买量规模：${projSorted.map(([p,d])=>`${p} <strong class="num">${fmtInt(d.total)}</strong> 人`).join(' / ')}，`;
     if(projSorted.length===2){
       const ratio=leader[1].total/follower[1].total;
-      h+=`是 ${follower[0]} 的 ${ratio.toFixed(1)} 倍,`;
-      h+=ratio>3?`两项目买量投入差距悬殊,资源分配严重不均。`:`两项目买量规模接近,投入相对均衡。`;
+      h+=`${leader[0]} 是 ${follower[0]} 的 <strong class="num">${ratio.toFixed(1)}</strong> 倍。`;
+      h+=ratio>3?'两项目买量投入差距悬殊。':'两项目买量规模相对接近。';
     }else{
-      h+=`领先项目买量规模最大。`;
+      h+=`${leader[0]} 买量规模最大。`;
     }
-    h+='</li>';
-
-    // Core market overlap analysis
-    const allTop1s=projSorted.map(e=>({proj:e[0],top1:e[1].top1}));
+    h+='</span>';
+    /* core market comparison */
+    const allTop1s=projSorted.map(([p,d])=>({proj:p,top1:d.top1}));
     const sameTop1=allTop1s.every(e=>e.top1&&allTop1s[0].top1&&e.top1[0]===allTop1s[0].top1[0]);
-    h+=`<li><strong>核心市场${sameTop1?'一致性':'差异'}:</strong> `;
-    if(sameTop1){
-      h+=`各项目的第一大市场均为 <strong>${allTop1s[0].top1[0]}</strong>,买量策略高度趋同,`;
-      h+=`存在市场重叠竞争风险,建议错位布局差异化市场。`;
-    }else{
-      h+=allTop1s.map(e=>`${e.proj}→${e.top1[0]}`).join('、');
-      h+=`,各项目核心市场不同,市场布局差异化,有利于覆盖不同用户群体。`;
-    }
-    h+='</li>';
-
-    // Market coverage comparison
-    h+=`<li><strong>市场覆盖对比:</strong> ${projSorted.map(e=>`${e[0]} 覆盖 ${e[1].countryCount} 国`).join('、')},`;
-    const maxCov=Math.max(...projSorted.map(e=>e[1].countryCount));
-    const minCov=Math.min(...projSorted.map(e=>e[1].countryCount));
-    if(maxCov-minCov>3){
-      h+=`覆盖广度差异明显(${maxCov-minCov} 国差距),`;
-      const wideProj=projSorted.find(e=>e[1].countryCount===maxCov)[0];
-      h+=`${wideProj} 市场拓展更积极,长尾布局更完善。`;
-    }else{
-      h+=`各项目市场覆盖广度接近,全球化程度相当。`;
-    }
-    h+='</li>';
-
-    // Concentration comparison
-    const concentrations=projSorted.map(e=>{
-      const top1Pct=e[1].top1?(e[1].top1[1]/e[1].total*100):0;
-      return {proj:e[0],top1Pct,top1:e[1].top1};
-    });
-    const mostConcentrated=concentrations.reduce((a,b)=>b.top1Pct>a.top1Pct?b:a);
-    const leastConcentrated=concentrations.reduce((a,b)=>b.top1Pct<a.top1Pct?b:a);
-    h+=`<li><strong>集中度对比:</strong> ${mostConcentrated.proj} 对单一市场依赖最高(${mostConcentrated.top1[0]} 占 ${mostConcentrated.top1Pct.toFixed(2)}%),${leastConcentrated.proj} 分布最分散(第一大国仅 ${leastConcentrated.top1Pct.toFixed(2)}%),`;
-    h+=mostConcentrated.top1Pct>80?`${mostConcentrated.proj} 存在较高的单一市场风险。`:`各项目集中度差异不大。`;
+    h+=`<span class="si-sub">核心市场${sameTop1?'一致':'差异'}：${allTop1s.map(e=>`${e.proj}→${e.top1[0]}`).join('、')}${sameTop1?'，市场重叠竞争风险较高。':'，市场布局差异化。'}</span>`;
+    /* concentration comparison */
+    const concentrations=projSorted.map(([p,d])=>{const pct=d.total>0?(d.top1[1]/d.total*100):0;return {proj:p,pct,top1:d.top1}});
+    const mostConc=concentrations.reduce((a,b)=>b.pct>a.pct?b:a);
+    const leastConc=concentrations.reduce((a,b)=>b.pct<a.pct?b:a);
+    h+=`<span class="si-sub">集中度：${mostConc.proj} 依赖度最高（${mostConc.top1[0]} 占 ${mostConc.pct.toFixed(2)}%），${leastConc.proj} 分布最分散（${leastConc.pct.toFixed(2)}%）。${mostConc.pct>80?mostConc.proj+' 单一市场风险较高。':''}</span>`;
     h+='</li>';
   }
 
