@@ -15010,9 +15010,9 @@ function disposeCharts(prefix){Object.keys(chartInst).forEach(k=>{if(!prefix||k.
 function initChart(id){const el=document.getElementById(id);if(!el)return null;if(chartInst[id]){chartInst[id].dispose()}const c=echarts.init(el);chartInst[id]=c;return c}
 
 /* ============ UTILS ============ */
-function fmt(n,d=1){if(n==null||isNaN(n))return'-';return Number(n).toFixed(d)}
+function fmt(n,d=2){if(n==null||isNaN(n))return'-';return Number(n).toFixed(d)}
 function fmtInt(n){if(n==null||isNaN(n))return'-';return Math.round(n).toLocaleString()}
-function fmtPct(n){if(n==null||isNaN(n))return'-';return(n*100).toFixed(1)+'%'}
+function fmtPct(n){if(n==null||isNaN(n))return'-';return(n*100).toFixed(2)+'%'}
 function cmpVal(base,val){if(base==null||val==null)return null;return val-base}
 function cmpCell(base,val,inv){const d=cmpVal(base,val);if(d==null)return'<span class="missing">-</span>';const abs=Math.abs(d)*100;const cls=(inv?(d>0):(d<0))?'cmp-down':'cmp-up';const sign=d>0?'+':'';return`<span class="${cls} num">${sign}${abs.toFixed(2)}%</span>`}
 function wavg(vals,weights){let sw=0,sv=0;vals.forEach((v,i)=>{if(v!=null&&!isNaN(v)&&weights[i]>0){sw+=weights[i];sv+=v*weights[i]}});return sw>0?sv/sw:null}
@@ -15367,9 +15367,9 @@ function renderTab0(){
         return {name:`项目 ${pr}`,type:'line',smooth:true,data:data,itemStyle:{color:m2ProjColors[pr]||m2Colors[S.m2Metric]},lineStyle:{width:2},symbol:'circle',symbolSize:6};
       });
     }
-    chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>isPct?v.toFixed(1)+'%':fmtInt(v)},
+    chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>isPct?v.toFixed(2)+'%':fmtInt(v)},
       grid:{left:60,right:20,top:40,bottom:40},xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}},splitLine:{show:false}},
-      yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:isPct?'{value}%':''},axisLine:{lineStyle:{color:'#334155'}},splitLine:{lineStyle:{color:'#1e293b'}}},
+      yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:isPct?v=>v.toFixed(2)+'%':v=>fmtInt(v)},axisLine:{lineStyle:{color:'#334155'}},splitLine:{lineStyle:{color:'#1e293b'}}},
       series:series,
       legend:{data:series.map(s=>s.name),textStyle:{color:'#94a3b8'},top:5}});
   },50);
@@ -15436,15 +15436,15 @@ function renderTab0(){
     const topCty=Object.entries(ctyAgg).sort((a,b)=>b[1]-a[1])[0];
     const anomalyList=[];
     if(d1Std>0&&Math.abs(ad.d1-avgD1)>2*d1Std){
-      const dev=((Math.abs(ad.d1-avgD1)/(avgD1>0?avgD1:1))*100).toFixed(0);
+      const dev=((Math.abs(ad.d1-avgD1)/(avgD1>0?avgD1:1))*100).toFixed(2);
       anomalyList.push(`D1留存 ${fmtPct(ad.d1)}（偏离均值 ${dev}%，${ad.d1<avgD1?'下降':'上升'}）`);
     }
     if(homeStd>0&&Math.abs(ad.home-avgHome)>2*homeStd){
-      const dev=((Math.abs(ad.home-avgHome)/(avgHome>0?avgHome:1))*100).toFixed(0);
+      const dev=((Math.abs(ad.home-avgHome)/(avgHome>0?avgHome:1))*100).toFixed(2);
       anomalyList.push(`首页到达 ${fmtPct(ad.home)}（偏离均值 ${dev}%，${ad.home<avgHome?'下降':'上升'}）`);
     }
     if(featStd>0&&Math.abs(ad.feat-avgFeat)>2*featStd){
-      const dev=((Math.abs(ad.feat-avgFeat)/(avgFeat>0?avgFeat:1))*100).toFixed(0);
+      const dev=((Math.abs(ad.feat-avgFeat)/(avgFeat>0?avgFeat:1))*100).toFixed(2);
       anomalyList.push(`功能点击 ${fmtPct(ad.feat)}（偏离均值 ${dev}%，${ad.feat<avgFeat?'下降':'上升'}）`);
     }
     anomalyDetail=`异常日期 <strong class="num">${ad.dt}</strong>：${anomalyList.join('，')}，主要来自版本 <strong>${topVer?topVer[0]:'-'}</strong>、国家 <strong>${topCty?topCty[0]:'-'}</strong>`;
@@ -15783,9 +15783,9 @@ function renderM4(parent){
         const vavg=avg(Object.values(vfa).map(arr=>wavg(arr.vals,arr.ws)));
         if(vavg>bestFeatRate){bestFeatRate=vavg;bestVer=v}
       });
-      verInsight=`<li>各版本中功能点击率综合表现最优的是 <strong>${fmtKey(bestVer)}</strong>(平均点击率 ${fmt((bestFeatRate<0?0:bestFeatRate)*100,1)}%)。</li>`;
+      verInsight=`<li>各版本中功能点击率综合表现最优的是 <strong>${fmtKey(bestVer)}</strong>(平均点击率 ${fmt((bestFeatRate<0?0:bestFeatRate)*100,2)}%)。</li>`;
     }
-    html+=`<div class="summary-box"><ul><li>点击率最高的功能是 <strong>${featRankAll[0]?.name||'-'}</strong>(${fmt((featRankAll[0]?.rate||0)*100,1)}%)，完成率最高的是 <strong>${compRankAll[0]?.name||'-'}</strong>(${fmt((compRankAll[0]?.rate||0)*100,1)}%)。</li>${verInsight}<li>建议重点关注完成率低于 25% 的功能模块,优化用户引导流程。</li></ul></div>`;
+    html+=`<div class="summary-box"><ul><li>点击率最高的功能是 <strong>${featRankAll[0]?.name||'-'}</strong>(${fmt((featRankAll[0]?.rate||0)*100,2)}%)，完成率最高的是 <strong>${compRankAll[0]?.name||'-'}</strong>(${fmt((compRankAll[0]?.rate||0)*100,2)}%)。</li>${verInsight}<li>建议重点关注完成率低于 25% 的功能模块,优化用户引导流程。</li></ul></div>`;
   }
   html+=`</div>`;
 
@@ -15856,11 +15856,11 @@ function renderM4(parent){
         topCountries.forEach(c=>{const tot=Object.values(ct).reduce((a,b)=>a+b,0);series[c].push(tot>0?(ct[c]/tot*100):0)});
       });
       const colors=['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1'];
-      chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>v.toFixed(1)+'%'},
+      chart.setOption({backgroundColor:'transparent',tooltip:{trigger:'axis',backgroundColor:'#1e293b',borderColor:'#334155',textStyle:{color:'#f1f5f9'},valueFormatter:v=>v.toFixed(2)+'%'},
         legend:{data:topCountries,textStyle:{color:'#94a3b8'},top:0},
         grid:{left:50,right:20,top:40,bottom:40},
         xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
-        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
+        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:v=>v.toFixed(2)+'%'},splitLine:{lineStyle:{color:'#1e293b'}}},
         series:topCountries.map((c,i)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[i%10]},lineStyle:{width:2}}))});
     };
     if(S.projects.length>1){
@@ -15940,7 +15940,7 @@ function buildCountrySummary(sel){
 
     /* 2. 哪个国家增长或流失最明显 */
     if(biggestChange){
-      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><strong>${biggestChange.country}</strong> ${biggestChange.type}最显著，${biggestChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(biggestChange.before)}</strong> 人${biggestChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(biggestChange.after)}</strong> 人，变动幅度 <strong class="num">${biggestChange.changePct.toFixed(1)}%</strong>。`;
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><strong>${biggestChange.country}</strong> ${biggestChange.type}最显著，${biggestChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(biggestChange.before)}</strong> 人${biggestChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(biggestChange.after)}</strong> 人，变动幅度 <strong class="num">${biggestChange.changePct.toFixed(2)}%</strong>。`;
       h+=biggestChange.type==='增长'?'需关注增长是否来自有效流量，避免低质量用户涌入。':'需排查买量渠道或素材问题，及时调整投放策略。';
       h+='</span></li>';
 
@@ -15982,7 +15982,7 @@ function buildCountrySummary(sel){
       if(ch&&(!globalChange||ch.changePct>globalChange.changePct)){globalChange=ch;globalProj=proj}
     });
     if(globalChange){
-      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><span class="si-tag">${globalProj}</span><strong>${globalChange.country}</strong> ${globalChange.type}最显著，${globalChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(globalChange.before)}</strong> 人${globalChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(globalChange.after)}</strong> 人，变动幅度 <strong class="num">${globalChange.changePct.toFixed(1)}%</strong>。`;
+      h+=`<li><span class="si-title">哪个国家增长或流失最明显</span><span class="si-body"><span class="si-tag">${globalProj}</span><strong>${globalChange.country}</strong> ${globalChange.type}最显著，${globalChange.date.slice(5)} 日买量从 <strong class="num">${fmtInt(globalChange.before)}</strong> 人${globalChange.type==='增长'?'增至':'降至'} <strong class="num">${fmtInt(globalChange.after)}</strong> 人，变动幅度 <strong class="num">${globalChange.changePct.toFixed(2)}%</strong>。`;
       h+=globalChange.type==='增长'?'需关注增长质量。':'需排查渠道或素材问题。';
       h+='</span></li>';
       /* 3. 异动从哪一天开始 */
@@ -15999,7 +15999,7 @@ function buildCountrySummary(sel){
     h+=`<li><span class="si-title">项目之间的对比</span><span class="si-body">买量规模：${projSorted.map(([p,d])=>`${p} <strong class="num">${fmtInt(d.total)}</strong> 人`).join(' / ')}，`;
     if(projSorted.length===2){
       const ratio=leader[1].total/follower[1].total;
-      h+=`${leader[0]} 是 ${follower[0]} 的 <strong class="num">${ratio.toFixed(1)}</strong> 倍。`;
+      h+=`${leader[0]} 是 ${follower[0]} 的 <strong class="num">${ratio.toFixed(2)}</strong> 倍。`;
       h+=ratio>3?'两项目买量投入差距悬殊。':'两项目买量规模相对接近。';
     }else{
       h+=`${leader[0]} 买量规模最大。`;
@@ -16080,7 +16080,7 @@ function initCountryCharts(){
         legend:{data:top10,textStyle:{color:'#94a3b8'},top:0,type:'scroll'},
         grid:{left:50,right:20,top:40,bottom:40},
         xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
-        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
+        yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:v=>v.toFixed(2)+'%'},splitLine:{lineStyle:{color:'#1e293b'}}},
         series:top10.map((c,ci)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[ci%10]},lineStyle:{width:2}}))});
     });
   }else{
@@ -16101,7 +16101,7 @@ function initCountryCharts(){
       legend:{data:top10,textStyle:{color:'#94a3b8'},top:0,type:'scroll'},
       grid:{left:50,right:20,top:40,bottom:40},
       xAxis:{type:'category',data:dates,axisLabel:{color:'#94a3b8',fontSize:11},axisLine:{lineStyle:{color:'#334155'}}},
-      yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:'{value}%'},splitLine:{lineStyle:{color:'#1e293b'}}},
+      yAxis:{type:'value',axisLabel:{color:'#94a3b8',fontSize:11,formatter:v=>v.toFixed(2)+'%'},splitLine:{lineStyle:{color:'#1e293b'}}},
       series:top10.map((c,ci)=>({name:c,type:'line',smooth:true,data:series[c],itemStyle:{color:colors[ci%10]},lineStyle:{width:2}}))});
   }
 }
