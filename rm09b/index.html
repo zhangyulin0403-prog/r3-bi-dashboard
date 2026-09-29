@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RM09B 产品指标看板</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">RM 品类</div>
+      <h1>RM09B 产品指标看板</h1>
+      <p id="report-caption">正在加载数据…</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="toggle-editor" class="edit-toggle" type="button" aria-pressed="false">进入编辑模式</button>
+      <div class="status-chip" id="data-status">数据加载中</div>
+    </div>
+  </header>
+
+  <section class="filters" aria-label="筛选条件">
+    <label>国家<select id="filter-country"></select></label>
+    <label>版本<select id="filter-version"></select></label>
+    <label>报表日期<select id="filter-report-date"></select></label>
+    <label>首访日期<select id="filter-date"></select></label>
+    <label>指标周期<select id="filter-day"><option>D0</option><option>D1</option><option>D2</option></select></label>
+    <button id="reset-filters" type="button">恢复汇总口径</button>
+  </section>
+
+  <nav class="tabs" aria-label="看板页面">
+    <button class="active" data-view="overview">总览</button>
+    <button data-view="api">核心功能</button>
+    <button data-view="feature">功能行为</button>
+    <button data-view="timing">通知分析</button>
+  </nav>
+
+  <main id="app" aria-live="polite"></main>
+
+  <aside id="editor-panel" class="editor-panel" aria-hidden="true">
+    <div class="editor-panel-head">
+      <div><span class="editor-kicker">精准定位编辑</span><h2>编辑当前元素</h2></div>
+      <button id="close-editor" class="icon-button" type="button" aria-label="关闭编辑面板">×</button>
+    </div>
+    <p class="editor-help">开启编辑模式后，点击看板中的标题、指标、卡片或图表区域即可定位。</p>
+    <div class="editor-target-box">
+      <span class="editor-label">已定位元素</span>
+      <strong id="editor-target-name">尚未选择</strong>
+      <code id="editor-target-path">—</code>
+    </div>
+    <label class="editor-field">文字内容
+      <textarea id="editor-text" rows="4" placeholder="请选择可编辑的文字元素" disabled></textarea>
+    </label>
+    <div class="editor-grid">
+      <label class="editor-field">文字颜色<input id="editor-color" type="color" value="#152536" disabled></label>
+      <label class="editor-field">背景颜色<input id="editor-background" type="color" value="#ffffff" disabled></label>
+    </div>
+    <label class="editor-check"><input id="editor-hidden" type="checkbox" disabled> 隐藏这个元素</label>
+    <div class="editor-actions">
+      <button id="apply-editor" class="primary-editor-button" type="button" disabled>应用修改</button>
+      <button id="reset-editor" type="button" disabled>清除当前修改</button>
+    </div>
+    <button id="reset-all-editor" class="reset-all-editor" type="button">清除全部本地修改</button>
+    <p id="editor-status" class="editor-status">修改只保存在当前浏览器，不会改变源数据。</p>
+  </aside>
+
+  <footer>
+    <span>本地静态看板</span>
+    <span>跨日期指标按新增用户数加权；“全部”使用源数据汇总行</span>
+  </footer>
+
+  <script src="meta.js"></script>
+  <script src="data.js"></script>
+  <script src="feature_data.js"></script>
+  <script src="timing_data.js"></script>
+  <script src="api_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
